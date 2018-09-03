@@ -210,15 +210,15 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		options := &ebiten.DrawImageOptions{}
 		
 		// move sprite x,y
-		angleRad := (this.Direction * math.Pi / 180) + math.Pi/2
-		this.X += int(this.Speed * math.Sin(angleRad))
-		this.Y += int(this.Speed * math.Cos(angleRad))
+		angleRad := this.Direction * math.Pi / 180 // convert degres into radians
+		this.Y -= int(this.Speed * math.Sin(angleRad))
+		this.X += int(this.Speed * math.Cos(angleRad))
 
 		options.GeoM.Translate(float64(this.X), float64(this.Y)) 
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
-		x1 := currentAnimation.CurrentStep * currentAnimation.StepWidth + currentAnimation.StepWidth
+		x1 := x0 + currentAnimation.StepWidth
 		r := image.Rect( x0 , 0, x1 , currentAnimation.StepHeight)
 		options.SourceRect = &r
 
