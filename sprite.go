@@ -33,10 +33,10 @@ type Sprite struct {
 	Animations 			map[string]*SpriteAnimation
 
 	// X coordinates of the sprite (in pixel)
-	X 					int
+	X 					float64
 
 	// Y coordinate of the sprite (in pixel)
-	Y 					int
+	Y 					float64
 
 	// Speed is in pixel/frame
 	Speed				float64
@@ -79,6 +79,12 @@ type SpriteAnimation struct {
 
 	// Total time for one step in millisecond
 	OneStepDuration					time.Duration
+
+	// Animation once and disapared
+	runOnce 						bool
+
+	// Callback after run once
+	callbackAfterRunOnce 			func(*Sprite)
 
 	// Start time of the current step
 	currentStepTimeStart 			time.Time
@@ -142,17 +148,17 @@ func (this *Sprite) AddAnimation(label string, path string, duration int, steps 
 /*
 Return width of the current animation displayed
 */
-func (this *Sprite) GetWidth() int {
+func (this *Sprite) GetWidth() float64 {
 	currentAnimation := this.Animations[this.CurrentAnimation]
-	return currentAnimation.StepWidth
+	return float64(currentAnimation.StepWidth)
 }
 
 /*
 Return height of the current animation displayed
 */
-func (this *Sprite) GetHeight() int {
+func (this *Sprite) GetHeight() float64 {
 	currentAnimation := this.Animations[this.CurrentAnimation]
-	return currentAnimation.StepHeight
+	return float64(currentAnimation.StepHeight)
 }
 
 /*
@@ -192,7 +198,7 @@ or
 
 x,y := mySprite.Position()
 */
-func (this *Sprite) Position(arg... int) (int,int) {
+func (this *Sprite) Position(arg... float64) (float64,float64) {
 	if len(arg)==2 {
 		this.X = arg[0]
 		this.Y = arg[1]
@@ -211,10 +217,10 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		
 		// move sprite x,y
 		angleRad := this.Direction * math.Pi / 180 // convert degres into radians
-		this.Y -= int(this.Speed * math.Sin(angleRad))
-		this.X += int(this.Speed * math.Cos(angleRad))
+		this.Y -= this.Speed * math.Sin(angleRad)
+		this.X += this.Speed * math.Cos(angleRad)
 
-		options.GeoM.Translate(float64(this.X), float64(this.Y)) 
+		options.GeoM.Translate(this.X, this.Y)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
@@ -232,6 +238,20 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 Start the animation (Reset+Show+Resume)
 */
 func (this *Sprite) Start() {
+	this.Reset()
+	this.Show()
+	this.Resume()
+}
+
+/*
+Start the animation only one time (Reset+Show+Resume)
+
+After running this, call the callback and pass the sprite pointer as argument
+*/
+func (this *Sprite) RunOnce( c func(*Sprite) ) {
+	currentAnimation := this.Animations[this.CurrentAnimation]
+	currentAnimation.runOnce = true
+	currentAnimation.callbackAfterRunOnce = c
 	this.Reset()
 	this.Show()
 	this.Resume()
@@ -292,7 +312,14 @@ func (this *Sprite) NextStep() bool {
 		if now.Sub(nextStepAt) > 0 { // time to change the current step
 			currentAnimation.CurrentStep++ // next step
 			if currentAnimation.CurrentStep+1 > currentAnimation.Steps {
-				this.Reset() // restart at the end of the animation
+				if currentAnimation.runOnce {  // run only one time
+					this.Stop()
+					this.Hide()
+					currentAnimation.callbackAfterRunOnce(this)
+
+				} else {
+					this.Reset() // restart at the end of the animation
+				}
 			}
 			currentAnimation.currentStepTimeStart = now
 			return true

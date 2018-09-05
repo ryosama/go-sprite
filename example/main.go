@@ -18,7 +18,7 @@ const (
 
 var (
 	girl *sprite.Sprite
-	explosion1,explosion2,explosion3 *sprite.Sprite
+	explosion1,explosion2,explosion3,explosion4 *sprite.Sprite
 )
 
 // update at every frame
@@ -41,6 +41,7 @@ func update(surface *ebiten.Image) error {
 	explosion1.Draw(surface)
 	explosion2.Draw(surface)
 	explosion3.Draw(surface)
+	explosion4.Draw(surface)
 
 	// display some informations
 	drawFPS(surface)
@@ -86,10 +87,19 @@ func main() {
 	explosion3.Position(WINDOW_WIDTH -10 -48, WINDOW_HEIGHT/3*2)
 	explosion3.CurrentAnimation = "explosion"
 	explosion3.Start()
-	
+
+	explosion4 = sprite.NewSprite()
+	explosion4.AddAnimation("explosion","gfx/explosion3.png",	 explosionDuration, 9, ebiten.FilterDefault)
+	explosion4.Position(WINDOW_WIDTH -10 -48, 50)
+	explosion4.CurrentAnimation = "explosion"
+	explosion4.RunOnce(afterRunOnce)
 
 	// infinite loop
 	if err := ebiten.Run(update, WINDOW_WIDTH, WINDOW_WIDTH, SCALE, "Sprite demo"); err != nil { log.Fatal(err) }
+}
+
+func afterRunOnce(s *sprite.Sprite) {
+	fmt.Printf("Execute after run once %v\n",s)
 }
 
 // display some stuff on the screen
@@ -97,7 +107,7 @@ func drawFPS(surface *ebiten.Image) {
 	ebitenutil.DebugPrint(surface,
 		fmt.Sprintf("FPS:%0.1f  X:%d Y:%d %s\nLeft:%v Right:%v Up:%v Down:%v",
 			ebiten.CurrentFPS(),
-			girl.X, girl.Y,
+			int(girl.X), int(girl.Y),
 			girl.CurrentAnimation,
 			ebiten.IsKeyPressed(ebiten.KeyLeft),
 			ebiten.IsKeyPressed(ebiten.KeyRight),
