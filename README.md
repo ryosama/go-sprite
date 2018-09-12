@@ -48,4 +48,6 @@ TODO
 
 - Add a video
 
-- Add implementation of Rotate and Skew from Ebiten library
+- Add implementation of Skew from Ebiten library
+
+- Add pre-defined animation (inflate, deflate, ...), like in font-awesome-animation

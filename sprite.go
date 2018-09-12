@@ -50,6 +50,9 @@ type Sprite struct {
 	// Zoom in or out on Y axis
 	ZoomY				float64
 
+	// Angle of rotation in degres
+	Angle				float64
+
 	// Visibility of the sprite
 	Visible				bool
 
@@ -239,6 +242,16 @@ func (this *Sprite) Zoom(arg... float64) (float64,float64) {
 
 
 /*
+Set rotation angle (in degres)
+
+Exemple :
+mySprite.Rotate(45)    // the same as mySprite.Angle = 45
+*/
+func (this *Sprite) Rotate(angle float64) {
+	this.Angle = angle
+}
+
+/*
 Calculate new coordonnates and draw the sprite on the screen, after drawing, go to the next step of animation
 */
 func (this *Sprite) Draw(surface *ebiten.Image) {
@@ -255,6 +268,8 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		options.GeoM.Translate(this.X, this.Y)
 
 		options.GeoM.Scale(this.ZoomX, this.ZoomY)
+
+		options.GeoM.Rotate( this.Angle * math.Pi / 180)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
