@@ -18,7 +18,7 @@ const (
 
 var (
 	girl *sprite.Sprite
-	explosion1,explosion2,explosion3,explosion4 *sprite.Sprite
+	explosion1,explosion2,explosion3,explosion4, zoom1 *sprite.Sprite
 )
 
 // update at every frame
@@ -42,6 +42,8 @@ func update(surface *ebiten.Image) error {
 	explosion2.Draw(surface)
 	explosion3.Draw(surface)
 	explosion4.Draw(surface)
+
+	zoom1.Draw(surface)
 
 	// display some informations
 	drawFPS(surface)
@@ -71,28 +73,30 @@ func main() {
 	explosionDuration := 500
 	// create some explosions
 	explosion1 = sprite.NewSprite()
-	explosion1.AddAnimation("explosion","gfx/explosion1.png",	explosionDuration, 5, ebiten.FilterDefault)
+	explosion1.AddAnimation("default","gfx/explosion1.png",	explosionDuration, 5, ebiten.FilterDefault)
 	explosion1.Position(10, WINDOW_HEIGHT/3*2)
-	explosion1.CurrentAnimation = "explosion"
 	explosion1.Start()
 
 	explosion2 = sprite.NewSprite()
-	explosion2.AddAnimation("explosion","gfx/explosion2.png",	 explosionDuration, 7, ebiten.FilterDefault)
+	explosion2.AddAnimation("default","gfx/explosion2.png",	 explosionDuration, 7, ebiten.FilterDefault)
 	explosion2.Position(WINDOW_WIDTH/2 -24, WINDOW_HEIGHT/3*2)
-	explosion2.CurrentAnimation = "explosion"
 	explosion2.Start()
 
 	explosion3 = sprite.NewSprite()
-	explosion3.AddAnimation("explosion","gfx/explosion3.png",	 explosionDuration, 9, ebiten.FilterDefault)
+	explosion3.AddAnimation("default","gfx/explosion3.png",	 explosionDuration, 9, ebiten.FilterDefault)
 	explosion3.Position(WINDOW_WIDTH -10 -48, WINDOW_HEIGHT/3*2)
-	explosion3.CurrentAnimation = "explosion"
 	explosion3.Start()
 
 	explosion4 = sprite.NewSprite()
-	explosion4.AddAnimation("explosion","gfx/explosion3.png",	 explosionDuration, 9, ebiten.FilterDefault)
+	explosion4.AddAnimation("default","gfx/explosion3.png",	 explosionDuration, 9, ebiten.FilterDefault)
 	explosion4.Position(WINDOW_WIDTH -10 -48, 50)
-	explosion4.CurrentAnimation = "explosion"
 	explosion4.RunOnce(afterRunOnce)
+
+	zoom1 = sprite.NewSprite()
+	zoom1.AddAnimation("default","gfx/som_girl_stand_down.png",	 1, 1, ebiten.FilterDefault)
+	zoom1.Position(50, 70)
+	zoom1.Zoom(2)
+	zoom1.Start()
 
 	// infinite loop
 	if err := ebiten.Run(update, WINDOW_WIDTH, WINDOW_WIDTH, SCALE, "Sprite demo"); err != nil { log.Fatal(err) }

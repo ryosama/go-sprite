@@ -44,6 +44,12 @@ type Sprite struct {
 	// Direction is an Angle in degres
 	Direction			float64
 
+	// Zoom in or out on X axis
+	ZoomX				float64
+
+	// Zoom in or out on Y axis
+	ZoomY				float64
+
 	// Visibility of the sprite
 	Visible				bool
 
@@ -97,9 +103,12 @@ Create a new sprite
 */
 func NewSprite() *Sprite {
 	this := new(Sprite)
-	this.Animations = make(map[string]*SpriteAnimation)
-	this.Visible = true
-	this.Animated   = true
+	this.Animations 		= make(map[string]*SpriteAnimation)
+	this.Visible 			= true
+	this.Animated  			= true
+	this.CurrentAnimation 	= "default"
+	this.ZoomX 				= 1
+	this.ZoomY 				= 1
 	return this
 }
 
@@ -206,6 +215,29 @@ func (this *Sprite) Position(arg... float64) (float64,float64) {
 	return this.X, this.Y
 }
 
+
+/*
+Set or retrieve Zoom factor
+
+Exemple :
+mySprite.Zoom(1.5)    // set both ZoomX and ZoomY to 1.5
+
+mySprite.Zoom(1.5, 2) // set ZoomX to 1.5 and ZoomY to 2
+
+zoomX, zoomY := mySprite.Zoom()
+*/
+func (this *Sprite) Zoom(arg... float64) (float64,float64) {
+	if len(arg)==1 {
+		this.ZoomX = arg[0]
+		this.ZoomY = arg[0]
+	} else if len(arg)==2 {
+		this.ZoomX = arg[0]
+		this.ZoomY = arg[1]
+	}
+	return this.ZoomX, this.ZoomY
+}
+
+
 /*
 Calculate new coordonnates and draw the sprite on the screen, after drawing, go to the next step of animation
 */
@@ -221,6 +253,8 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		this.X += this.Speed * math.Cos(angleRad)
 
 		options.GeoM.Translate(this.X, this.Y)
+
+		options.GeoM.Scale(this.ZoomX, this.ZoomY)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
