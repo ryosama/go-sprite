@@ -18,7 +18,7 @@ const (
 
 var (
 	girl *sprite.Sprite
-	explosion1,explosion2,explosion3,explosion4, zoom1, rotate1 *sprite.Sprite
+	explosion1,explosion2,explosion3,explosion4, zoom1, rotate1, skew1 *sprite.Sprite
 )
 
 // update at every frame
@@ -46,6 +46,8 @@ func update(surface *ebiten.Image) error {
 	zoom1.Draw(surface)
 
 	rotate1.Draw(surface)
+
+	skew1.Draw(surface)
 
 	// display some informations
 	drawFPS(surface)
@@ -105,6 +107,12 @@ func main() {
 	rotate1.Position(200, 70)
 	rotate1.Rotate(45) // in degres
 	rotate1.Start()
+
+	skew1 = sprite.NewSprite()
+	skew1.AddAnimation("default","gfx/som_girl_stand_down.png",	 1, 1, ebiten.FilterDefault)
+	skew1.Position(60, 70)
+	skew1.Skew(45,23) // in degres
+	skew1.Start()
 
 	// infinite loop
 	if err := ebiten.Run(update, WINDOW_WIDTH, WINDOW_WIDTH, SCALE, "Sprite demo"); err != nil { log.Fatal(err) }

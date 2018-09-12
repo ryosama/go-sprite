@@ -53,6 +53,12 @@ type Sprite struct {
 	// Angle of rotation in degres
 	Angle				float64
 
+	// Skew on X axis in degres
+	SkewX				float64
+
+	// Skew on Y axis in degres
+	SkewY				float64
+
 	// Visibility of the sprite
 	Visible				bool
 
@@ -251,6 +257,29 @@ func (this *Sprite) Rotate(angle float64) {
 	this.Angle = angle
 }
 
+
+/*
+Set or retrieve Skew factor (in degres)
+
+Exemple :
+mySprite.Skew(20)    // set both SkewX and SkewY to 20
+
+mySprite.Skew(20, 40) // set SkewX to 20 and SkewY to 40
+
+skewX, skewY := mySprite.Skew()
+*/
+func (this *Sprite) Skew(arg... float64) (float64,float64) {
+	if len(arg)==1 {
+		this.SkewX = arg[0]
+		this.SkewY = arg[0]
+	} else if len(arg)==2 {
+		this.SkewX = arg[0]
+		this.SkewY = arg[1]
+	}
+	return this.SkewX, this.SkewY
+}
+
+
 /*
 Calculate new coordonnates and draw the sprite on the screen, after drawing, go to the next step of animation
 */
@@ -264,12 +293,12 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		angleRad := this.Direction * math.Pi / 180 // convert degres into radians
 		this.Y -= this.Speed * math.Sin(angleRad)
 		this.X += this.Speed * math.Cos(angleRad)
-
-		options.GeoM.Translate(this.X, this.Y)
-
+		
+		
+		options.GeoM.Rotate( deg2rad(this.Angle))
+		options.GeoM.Skew( deg2rad(this.SkewX), deg2rad(this.SkewY) )
 		options.GeoM.Scale(this.ZoomX, this.ZoomY)
-
-		options.GeoM.Rotate( this.Angle * math.Pi / 180)
+		options.GeoM.Translate(this.X, this.Y)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
@@ -375,4 +404,10 @@ func (this *Sprite) NextStep() bool {
 		}
 	}
 	return false
+}
+
+
+
+func deg2rad(angle float64) float64 {
+	return angle * math.Pi / -180
 }
