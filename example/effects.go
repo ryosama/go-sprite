@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	sprites [7]*sprite.Sprite
+	sprites [12]*sprite.Sprite
 )
 
 // update at every frame
@@ -26,6 +26,8 @@ func update(surface *ebiten.Image) error {
 	for i:=0 ; i<len(sprites) ; i++ {
 		sprites[i].Draw(surface)
 	}
+
+	//sprites[0].Draw(surface)
 
 	return nil
 }
@@ -49,26 +51,55 @@ func main() {
 		}
 	}
 
+	i:=0
+
 	// Inflate
-	sprites[0].AddEffect(&sprite.EffectOptions{ Animation:"default" , Effect: sprite.INFLATE, Zoom:2, Duration:200, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Animation:"default" , Effect: sprite.INFLATE, Zoom:2, Duration:2000, Repeat:true })
+	i++
 	
 	// Defalte
-	sprites[1].AddEffect(&sprite.EffectOptions{ Effect: sprite.DEFLATE, Zoom:2, Duration:2000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.INFLATE, Zoom:0.5, Duration:2000, Repeat:true})
+	i++
 
 	// Breathe
-	sprites[2].AddEffect(&sprite.EffectOptions{ Effect: sprite.BREATHE, Zoom:1.3, Duration:1000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.INFLATE, Zoom:1.3, Duration:1000, Repeat:true, GoBack:true })
+	i++
 
 	// Flip X
-	sprites[3].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPX, Duration:1000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPX, Duration:1000, Repeat:true })
+	i++
+
+	// Flip X and go back
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPX, Duration:1000, Repeat:true, GoBack:true })
+	i++
 
 	// Flip Y
-	sprites[4].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPY, Duration:1000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPY, Duration:1000, Repeat:true })
+	i++
+
+	// Flip Y and Go back
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPY, Duration:1000, Repeat:true, GoBack:true })
+	i++
 
 	// Fade
-	sprites[5].AddEffect(&sprite.EffectOptions{ Effect: sprite.FADE, FadeFrom:1 , FadeTo:0.5, Duration:1000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FADE, FadeFrom:1 , FadeTo:0.5, Duration:1000, Repeat:true })
+	i++
 
 	// Fade in and out
-	sprites[6].AddEffect(&sprite.EffectOptions{ Effect: sprite.FADEINOUT, FadeFrom:1 , FadeTo:0.1, Duration:2000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FADE, FadeFrom:1 , FadeTo:0.1, Duration:2000, Repeat:true, GoBack:true })
+	i++
+
+	// Turn
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.TURN, Angle:90, Duration:2000, Repeat:true })
+	i++
+
+	// Turn and go back
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.TURN, Angle:90, Duration:2000, Repeat:true, GoBack:true })
+	i++
+
+	// Turn and go back clockwise
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.TURN, Angle:90, Duration:2000, Repeat:true, GoBack:true, Clockwise:true })
+	i++
 
 	// infinite loop
 	if err := ebiten.Run(update, WINDOW_WIDTH, WINDOW_WIDTH, SCALE, "Sprite demo"); err != nil { log.Fatal(err) }

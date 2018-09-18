@@ -25,16 +25,14 @@ import (
 	"fmt"
 )
 
-// create constate for effect
+// create constant for effects
 const (
 	NO_EFFECT = iota
 	INFLATE
-	DEFLATE
-	BREATHE
 	FLIPX
 	FLIPY
 	FADE
-	FADEINOUT
+	TURN
 )
 
 //////////////////////////////////////////// TYPES ////////////////////////////////////////////
@@ -82,7 +80,7 @@ type Sprite struct {
 	// Animated or not
 	Animated			bool
 
-	// Displace coordonnate to the center of the sprite
+	// Displace X and Y coordonnate to the center of the sprite
 	CenterCoordonnates	bool
 
 	// Draw debug borders around sprite
@@ -132,9 +130,12 @@ type SpriteAnimation struct {
 }
 
 type AnimationEffect struct {
-	effect 					int
-	zoomEnd,zoomStart		float64
-	alphaStart, alphaEnd	float64
+	options 				*EffectOptions
+	zoomStart				float64
+	alphaStart				float64
+	angleStart				float64
+	clockwise 				bool
+	goback 					bool
 	duration 				time.Duration
 	timeStart,timeEnd		time.Time
 	callback				func()
@@ -155,8 +156,20 @@ type EffectOptions struct {
 	// For INFLATE, DEFLATE, BREATHE effects
 	Zoom 					float64
 
+	// For TURN effect
+	Clockwise 				bool
+
+	// For TURN effect (in degres)
+	Angle 					float64
+
 	// Duration of the effect
 	Duration 				int
+
+	// Duration of the effect (in time.Duration)
+	durationTime 			time.Duration
+
+	// Redo the animation on the counter way
+	GoBack 					bool
 
 	// Repeat or not at the end of effect
 	Repeat 					bool
@@ -227,120 +240,92 @@ func (this *Sprite) AddEffect(options *EffectOptions) {
 		options.Animation = "default"
 	}
 
+	options.durationTime = time.Millisecond * time.Duration(options.Duration)
+
 	switch options.Effect {
-		case INFLATE :	this.inflate(options.Animation, options.Zoom, 					options.Duration, options.Repeat)
-		case DEFLATE : 	this.deflate(options.Animation, options.Zoom, 					options.Duration, options.Repeat)
-		case BREATHE : 	this.breathe(options.Animation, options.Zoom, 					options.Duration, options.Repeat)
-		case FLIPX : 	this.flipX(options.Animation, 									options.Duration, options.Repeat)
-		case FLIPY :	this.flipY(options.Animation, 									options.Duration, options.Repeat)
-		case FADE : 	this.fade(options.Animation, options.FadeFrom, options.FadeTo, 	options.Duration, options.Repeat)
-		case FADEINOUT: this.fadeInOut(options.Animation, options.FadeFrom, options.FadeTo, 	options.Duration, options.Repeat)
+		case INFLATE :	this.inflate(options)
+		case FLIPX : 	this.flipX(options)
+		case FLIPY :	this.flipY(options)
+		case FADE : 	this.fade(options)
+		case TURN:		this.turn(options)
 	}
 }
 
 
-func (this *Sprite) inflate(label string, zoomEnd float64, duration int, repeat bool) {
+func (this *Sprite) inflate(options *EffectOptions) {
 	e := new(AnimationEffect)
-	e.effect 				= INFLATE
+	e.options 				= options
 	e.zoomStart				= this.ZoomX
-	e.zoomEnd				= zoomEnd
-	e.duration 				= time.Millisecond * time.Duration(duration)
-	this.Animations[label].Effect = e
+	this.Animations[options.Animation].Effect = e
 
-	if repeat == true {
+	if options.Repeat == true {
 		e.callback = func() {
 			this.ZoomX = e.zoomStart 	// reset zoom
 			e = nil 					// erase previous effect
-			this.inflate(label, zoomEnd, duration , true )
+			this.inflate(options)
 		}
 	}
 }
 
-func (this *Sprite) deflate(label string, zoomEnd float64, duration int, repeat bool) {
-	this.inflate(label, 1/zoomEnd, duration , repeat )
-}
 
-
-func (this *Sprite) breathe(label string, zoomEnd float64, duration int, repeat bool) {
+func (this *Sprite) flipX(options *EffectOptions) {
 	e := new(AnimationEffect)
-	e.effect 				= BREATHE
+	e.options 				= options
 	e.zoomStart				= this.ZoomX
-	e.zoomEnd				= zoomEnd
-	e.duration 				= time.Millisecond * time.Duration(duration)
-	this.Animations[label].Effect = e
+	this.Animations[options.Animation].Effect = e
 
-	if repeat == true {
-		e.callback = func() {
-			this.ZoomX = e.zoomStart // reset zoom
-			e = nil 
-			this.breathe(label, zoomEnd, duration , true )
-		}
-	}
-}
-
-func (this *Sprite) flipX(label string, duration int, repeat bool) {
-	e := new(AnimationEffect)
-	e.effect 				= FLIPX
-	e.zoomStart				= this.ZoomX
-	e.duration 				= time.Millisecond * time.Duration(duration)
-	this.Animations[label].Effect = e
-
-	if repeat == true {
+	if options.Repeat == true {
 		e.callback = func() {
 			this.ZoomX = e.zoomStart 	// reset zoom
 			e = nil 					// erase previous effect
-			this.flipX(label, duration , true )
+			this.flipX(options)
 		}
 	}
 }
 
-func (this *Sprite) flipY(label string, duration int, repeat bool) {
+func (this *Sprite) flipY(options *EffectOptions) {
 	e := new(AnimationEffect)
-	e.effect 				= FLIPY
+	e.options 				= options
 	e.zoomStart				= this.ZoomY
-	e.duration 				= time.Millisecond * time.Duration(duration)
-	this.Animations[label].Effect = e
+	this.Animations[options.Animation].Effect = e
 
-	if repeat == true {
+	if options.Repeat == true {
 		e.callback = func() {
 			this.ZoomY = e.zoomStart 	// reset zoom
 			e = nil 					// erase previous effect
-			this.flipY(label, duration , true )
+			this.flipY(options)
 		}
 	}
 }
 
 
-func (this *Sprite) fade(label string,  from , to float64, duration int, repeat bool) {
+func (this *Sprite) fade(options *EffectOptions) {
 	e := new(AnimationEffect)
-	e.effect 				= FADE
+	e.options 				= options
 	e.alphaStart			= this.Alpha
-	e.alphaEnd				= to
-	e.duration 				= time.Millisecond * time.Duration(duration)
-	this.Animations[label].Effect = e
+	this.Animations[options.Animation].Effect = e
 
-	if repeat == true {
+	if options.Repeat == true {
 		e.callback = func() {
 			this.Alpha = e.alphaStart 	// reset alpha
 			e = nil 					// erase previous effect
-			this.fade(label, from, to, duration,  true )
+			this.fade(options)
 		}
 	}
 }
 
-func (this *Sprite) fadeInOut(label string,  from , to float64, duration int, repeat bool) {
-	e := new(AnimationEffect)
-	e.effect 				= FADEINOUT
-	e.alphaStart			= this.Alpha
-	e.alphaEnd				= to
-	e.duration 				= time.Millisecond * time.Duration(duration)
-	this.Animations[label].Effect = e
 
-	if repeat == true {
+func (this *Sprite) turn(options *EffectOptions) {
+	e := new(AnimationEffect)
+	e.options 				= options
+	e.angleStart			= this.Angle
+	this.Animations[options.Animation].Effect = e
+
+	if options.Repeat == true {
 		e.callback = func() {
-			this.Alpha = e.alphaStart 	// reset alpha
-			e = nil 					// erase previous effect
-			this.fadeInOut(label, from, to, duration,  true )
+			this.Angle = e.angleStart 	// reset alpha
+			e = nil 				// erase previous effect
+			this.turn(options)
 		}
 	}
 }
@@ -480,11 +465,11 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		// if an animation is defined
 		e := currentAnimation.Effect
 		if e != nil {
-			if e.effect > 0 {
+			if e.options.Effect > 0 {
 				// first drawing ? defined the time for first step
 				if e.timeStart.IsZero() || e.timeStart.Unix()==0 {
 					e.timeStart = time.Now()
-					e.timeEnd 	= e.timeStart.Add(e.duration)
+					e.timeEnd 	= e.timeStart.Add(e.options.durationTime)
 					fmt.Printf("Demarre une animation %v\n            et la fin %v\n", e.timeStart, e.timeEnd)
 				}
 
@@ -494,68 +479,129 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 				// animation not finished
 				if e.timeEnd.Sub(now) > 0 {
 
-					where := float64(durationFromStart.Nanoseconds()) / float64(e.duration.Nanoseconds())
+					where := float64(durationFromStart.Nanoseconds()) / float64(e.options.durationTime.Nanoseconds())
 					zoomFactor  := 1.0
-					switch currentAnimation.Effect.effect {
+					//fmt.Printf("Effect:%d\n",e.options.Effect )
+
+					switch e.options.Effect {
 						case INFLATE :
-							zoomFactor = convertRange(where, &Range{min:0,max:1},&Range{min:e.zoomStart,max:e.zoomEnd})
+							if e.options.GoBack { // go and return
+								var step float64 = 0.5
+								if where < step {
+									zoomFactor = convertRange(where,
+													&Range{min:0,max:step},
+													&Range{min:e.zoomStart,max:e.options.Zoom})
+								} else {
+									zoomFactor = convertRange(where,
+													&Range{min:step,max:1},
+													&Range{min:e.options.Zoom,max:e.zoomStart})
+								}
+
+							} else { // only one way
+								zoomFactor = convertRange(where,
+													&Range{min:0,max:1},
+													&Range{min:e.zoomStart,max:e.options.Zoom})
+							}
 							this.ZoomX = zoomFactor
 							this.ZoomY = zoomFactor
 							///////////////////////////////////////////////
 
-						case BREATHE :
-							var step float64 = 0.5
-							if where < step {
-								zoomFactor = convertRange(where, &Range{min:0,max:step},&Range{min:e.zoomStart,max:e.zoomEnd})
-							} else {
-								zoomFactor = convertRange(where, &Range{min:step,max:1},&Range{min:e.zoomEnd,max:e.zoomStart})
-							}
-							this.ZoomX = zoomFactor
-							this.ZoomY = zoomFactor							
-							///////////////////////////////////////////////
-
 						case FLIPX :
-							var step float64 = 0.25
-							if 			where < step*1 {
-								zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
-							} else if 	where < step*2 {
-							 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
-							} else if 	where < step*3 {
-							 	zoomFactor = convertRange(where, &Range{min:step*2,max:step*3}, &Range{min:-1,max:0} )
-							} else {
-							 	zoomFactor = convertRange(where, &Range{min:step*3,max:step*4}, &Range{min:0,max:1} )
+							if e.options.GoBack { // go and return
+								var step float64 = 0.25
+								if 			where < step*1 {
+									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
+								} else if 	where < step*2 {
+								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
+								} else if 	where < step*3 {
+								 	zoomFactor = convertRange(where, &Range{min:step*2,max:step*3}, &Range{min:-1,max:0} )
+								} else {
+								 	zoomFactor = convertRange(where, &Range{min:step*3,max:step*4}, &Range{min:0,max:1} )
+								}
+
+							} else { // only one way
+								var step float64 = 0.5
+								if 			where < step*1 {
+									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
+								} else {
+								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
+								}
 							}
 							this.ZoomX = zoomFactor
 							///////////////////////////////////////////////
 
 						case FLIPY :
-							var step float64 = 0.25
-							if 			where < step*1 {
-								zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
-							} else if 	where < step*2 {
-							 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
-							} else if 	where < step*3 {
-							 	zoomFactor = convertRange(where, &Range{min:step*2,max:step*3}, &Range{min:-1,max:0} )
-							} else {
-							 	zoomFactor = convertRange(where, &Range{min:step*3,max:step*4}, &Range{min:0,max:1} )
+							if e.options.GoBack { // go and return
+								var step float64 = 0.25
+								if 			where < step*1 {
+									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
+								} else if 	where < step*2 {
+								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
+								} else if 	where < step*3 {
+								 	zoomFactor = convertRange(where, &Range{min:step*2,max:step*3}, &Range{min:-1,max:0} )
+								} else {
+								 	zoomFactor = convertRange(where, &Range{min:step*3,max:step*4}, &Range{min:0,max:1} )
+								}
+
+							} else { // only one way
+								var step float64 = 0.5
+								if 			where < step*1 {
+									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
+								} else {
+								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
+								}
 							}
 							this.ZoomY = zoomFactor
 							///////////////////////////////////////////////
 
 						case FADE :
-							this.Alpha = convertRange(	where,
-														&Range{min:0,max:1},
-														&Range{min:e.alphaStart, max:e.alphaEnd},
-										)
+							if e.options.GoBack { // go and return
+								var step float64 = 0.5
+								if 			where < step {
+									this.Alpha = convertRange(where,
+														&Range{min:0,max:step},
+														&Range{min:e.options.FadeFrom,max:e.options.FadeTo})
+								} else {
+									this.Alpha = convertRange(where,
+														&Range{min:step,max:1},
+														&Range{min:e.options.FadeTo,max:e.options.FadeFrom})
+								}
+
+							} else { // only one way
+								this.Alpha = convertRange(
+												where,
+												&Range{min:0,max:1},
+												&Range{min:e.options.FadeFrom, max:e.options.FadeTo},
+								)
+							}
+							
 							///////////////////////////////////////////////
 
-						case FADEINOUT :
-							var step float64 = 0.5
-							if 			where < step {
-								this.Alpha = convertRange(where, &Range{min:0,max:step},&Range{min:e.alphaStart,max:e.alphaEnd})
-							} else {
-								this.Alpha = convertRange(where, &Range{min:step,max:1},&Range{min:e.alphaEnd,max:e.alphaStart})
+						case TURN :
+							clockwise := 1.0
+							if e.options.Clockwise {
+								clockwise = -1.0
 							}
+
+							if e.options.GoBack { // go and return
+								var step float64 = 0.5
+								if 			where < step {
+									this.Angle = convertRange(where,
+														&Range{min:0,max:step},
+														&Range{min:0,max:e.options.Angle * clockwise})
+								} else {
+									this.Angle = convertRange(where,
+														&Range{min:step*1,max:step*2},
+														&Range{min:e.options.Angle * clockwise,max:0})
+								}
+
+							} else {
+								this.Angle = convertRange(where,
+														&Range{min:0,max:1},
+														&Range{min:0,max:e.options.Angle * clockwise})
+							}
+							
+
 							///////////////////////////////////////////////
 
 					} // switch case
@@ -569,21 +615,18 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 			} // if e.effect
 		} // if e != nil
 
-
-		// apply modification		
-		options.GeoM.Rotate( deg2rad(this.Angle))
-		options.GeoM.Skew( deg2rad(this.SkewX), deg2rad(this.SkewY) )
-		options.GeoM.Scale(this.ZoomX, this.ZoomY)
-		options.ColorM.Scale(1.0, 1.0, 1.0, this.Alpha)
-
+		
+		// apply modification
 		if this.CenterCoordonnates {
-			//print("Je suis la\n")
-			options.GeoM.Translate(this.X - this.GetWidth()/2* this.ZoomX, this.Y - this.GetHeight()/2* this.ZoomY)
-			
-		} else {
-			options.GeoM.Translate(this.X , this.Y)
+			options.GeoM.Translate(-float64(this.GetWidth())/2, -float64(this.GetHeight())/2)
 		}
+		options.GeoM.Scale(this.ZoomX, this.ZoomY)
+		options.GeoM.Rotate( deg2rad(this.Angle) )
+		options.GeoM.Translate(this.X , this.Y)
 
+		options.GeoM.Skew( deg2rad(this.SkewX), deg2rad(this.SkewY) )
+		
+		options.ColorM.Scale(1.0, 1.0, 1.0, this.Alpha)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
