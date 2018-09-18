@@ -48,4 +48,6 @@ TODO
 
 - Add a video
 
-- Add pre-defined animation (inflate, deflate, ...), like in font-awesome-animation
+- Add pre-defined animation like in font-awesome-animation
+
+- Add rotate animation
