@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	sprites [6]*sprite.Sprite
+	sprites [8]*sprite.Sprite
 )
 
 // update at every frame
@@ -56,7 +56,7 @@ func main() {
 
 	// Zoom in and out
 	sprites[i].AddEffect(&sprite.EffectOptions{
-							Animation:"default",
+							Animation:"default", // optional
 							Effect: sprite.ZOOM,
 							Zoom:1.3,
 							Duration:1000,
@@ -83,7 +83,15 @@ func main() {
 	i++
 
 	// Hue Yellow
-	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.HUE, Red:3, Green:3, Duration:1000, Repeat:true, GoBack:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.HUE, Red:5,  Duration:1000, Repeat:true, GoBack:true })
+	i++
+
+	// Move Relative X and Relative Y
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE_RELATIVE, X:10, Y:10, Duration:1000, Repeat:true, GoBack:true })
+	i++
+
+	// Move X and Y coords
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE_ABSOLUTE, X:WINDOW_WIDTH/2, Y:WINDOW_HEIGHT/2, Duration:1000, Repeat:true, GoBack:true })
 	i++
 
 

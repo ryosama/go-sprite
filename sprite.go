@@ -22,7 +22,7 @@ import (
 	"time"
 	"math"
 	"log"
-	"fmt"
+	//"fmt"
 )
 
 // create constant for effects
@@ -34,6 +34,8 @@ const (
 	FADE
 	TURN
 	HUE
+	MOVE_RELATIVE
+	MOVE_ABSOLUTE
 )
 
 //////////////////////////////////////////// TYPES ////////////////////////////////////////////
@@ -144,6 +146,7 @@ type AnimationEffect struct {
 	zoomStart										float64
 	redStart, greenStart, blueStart, alphaStart	 	float64
 	angleStart										float64
+	xStart, yStart									float64
 	duration 				time.Duration
 	timeStart,timeEnd		time.Time
 	repeatCallback			func()
@@ -172,7 +175,10 @@ type EffectOptions struct {
 	Angle 					float64
 
 	// For HUE effect
-	Red, Green, Blue		float64	
+	Red, Green, Blue		float64
+
+	// For MOVERELATIVE and MOVEABSOLUTE effect
+	X,Y 					float64
 
 	// Duration of the effect
 	Duration 				int
@@ -261,12 +267,14 @@ func (this *Sprite) AddEffect(options *EffectOptions) {
 	options.durationTime = time.Millisecond * time.Duration(options.Duration)
 
 	switch options.Effect {
-		case ZOOM :		this.zoom(options)
-		case FLIPX : 	this.flipX(options)
-		case FLIPY :	this.flipY(options)
-		case FADE : 	this.fade(options)
-		case TURN:		this.turn(options)
-		case HUE:		this.hue(options)
+		case ZOOM :			this.zoom(options)
+		case FLIPX : 		this.flipX(options)
+		case FLIPY :		this.flipY(options)
+		case FADE : 		this.fade(options)
+		case TURN:			this.turn(options)
+		case HUE:			this.hue(options)
+		case MOVE_RELATIVE:	this.moveRelative(options)
+		case MOVE_ABSOLUTE:	this.moveAbsolute(options)
 	}
 }
 
@@ -353,6 +361,7 @@ func (this *Sprite) hue(options *EffectOptions) {
 	e := new(AnimationEffect)
 	e.options 			= options
 
+	// init value
 	if e.options.Red == 0 {
 		e.options.Red = 1
 	}
@@ -362,6 +371,7 @@ func (this *Sprite) hue(options *EffectOptions) {
 	if e.options.Blue == 0 {
 		e.options.Blue = 1
 	}
+
 	e.redStart			= this.Red
 	e.greenStart		= this.Green
 	e.blueStart			= this.Blue
@@ -378,6 +388,49 @@ func (this *Sprite) hue(options *EffectOptions) {
 	}
 }
 
+func (this *Sprite) moveRelative(options *EffectOptions) {
+	e := new(AnimationEffect)
+	e.options 				= options
+
+	e.xStart = this.X
+	e.yStart = this.Y
+	this.Animations[options.Animation].Effect = e
+
+	if options.Repeat == true {
+		e.repeatCallback = func() {
+			this.X = e.xStart 	// reset x position
+			this.Y = e.yStart 	// reset y position
+			e = nil 			// erase previous effect
+			this.moveRelative(options)
+		}
+	}
+}
+
+
+func (this *Sprite) moveAbsolute(options *EffectOptions) {
+	e := new(AnimationEffect)
+	e.options 				= options
+
+	if e.options.X == 0 {
+		e.options.X = this.X
+	}
+	if e.options.Y == 0 {
+		e.options.Y = this.Y
+	}
+
+	e.xStart = this.X
+	e.yStart = this.Y
+	this.Animations[options.Animation].Effect = e
+
+	if options.Repeat == true {
+		e.repeatCallback = func() {
+			this.X = e.xStart 	// reset x position
+			this.Y = e.yStart 	// reset y position
+			e = nil 			// erase previous effect
+			this.moveAbsolute(options)
+		}
+	}
+}
 
 /*
 Return width of the current animation displayed
@@ -651,39 +704,54 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 							if e.options.GoBack { // go and return
 								var step float64 = 0.5
 								if 			where < step {
-									if e.options.Red != 1 {
-										this.Red 	= convertRange(where, &Range{min:0,max:step}, &Range{min:1,max:e.options.Red})
-									}
-									if e.options.Green != 1 {
-										this.Green 	= convertRange(where, &Range{min:0,max:step}, &Range{min:1,max:e.options.Green})
-									}
-									if e.options.Blue != 1 {
-										this.Blue 	= convertRange(where, &Range{min:0,max:step}, &Range{min:1,max:e.options.Blue})
-									}
+									this.Red 	= convertRange(where, &Range{min:0,max:step}, &Range{min:e.redStart,max:e.options.Red})
+									this.Green 	= convertRange(where, &Range{min:0,max:step}, &Range{min:e.greenStart,max:e.options.Green})
+									this.Blue 	= convertRange(where, &Range{min:0,max:step}, &Range{min:e.blueStart,max:e.options.Blue})
 								} else {
-									if e.options.Red != 1 {
-										this.Red 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Red,max:1})
-									}
-									if e.options.Green != 1 {
-										this.Green 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Green,max:1})
-									}
-									if e.options.Blue != 1 {
-										this.Blue 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Blue,max:1})
-									}
+									this.Red 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Red,max:e.redStart})
+									this.Green 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Green,max:e.greenStart})
+									this.Blue 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Blue,max:e.blueStart})
 								}
 
 							} else { // only one way
-								if e.options.Red != 1 {
-									this.Red 	= convertRange(where, &Range{min:0,max:1}, &Range{min:1, max:e.options.Red})
-								}
-								if e.options.Green != 1 {
-									this.Green 	= convertRange(where, &Range{min:0,max:1}, &Range{min:1, max:e.options.Green})
-								}
-								if e.options.Blue != 1 {
-									this.Blue 	= convertRange(where, &Range{min:0,max:1}, &Range{min:1, max:e.options.Blue})
-								}
+								this.Red 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.redStart, max:e.options.Red})
+								this.Green 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.greenStart, max:e.options.Green})
+								this.Blue 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.blueStart, max:e.options.Blue})
 							}
-							
+							///////////////////////////////////////////////
+
+						case MOVE_RELATIVE :
+							if e.options.GoBack { // go and return
+								var step float64 = 0.5
+								if 			where < step {
+									this.X=convertRange(where, &Range{min:0,max:step}, &Range{min:e.xStart,max:e.options.X+e.xStart})
+									this.Y=convertRange(where, &Range{min:0,max:step}, &Range{min:e.yStart,max:e.options.Y+e.yStart})
+								} else {
+									this.X=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.X+e.xStart,max:e.xStart})
+									this.Y=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Y+e.yStart,max:e.yStart})
+								}
+
+							} else { // only one way
+								this.X 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.xStart, max:e.options.X + e.xStart})
+								this.Y 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.yStart, max:e.options.Y + e.yStart})
+							}
+							///////////////////////////////////////////////
+
+						case MOVE_ABSOLUTE :
+							if e.options.GoBack { // go and return
+								var step float64 = 0.5
+								if 			where < step {
+									this.X=convertRange(where, &Range{min:0,max:step}, &Range{min:e.xStart,max:e.options.X})
+									this.Y=convertRange(where, &Range{min:0,max:step}, &Range{min:e.yStart,max:e.options.Y})
+								} else {
+									this.X=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.X,max:e.xStart})
+									this.Y=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Y,max:e.yStart})
+								}
+
+							} else { // only one way
+								this.X 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.xStart, max:e.options.X})
+								this.Y 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.yStart, max:e.options.Y})
+							}
 							///////////////////////////////////////////////
 
 					} // switch case
