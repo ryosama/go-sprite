@@ -25,17 +25,30 @@ import (
 	//"fmt"
 )
 
-// create constant for effects
+// Constant effects
 const (
 	NO_EFFECT = iota
+
+	// Increase or decrease zoom on sprite
 	ZOOM
+
+	// Horizontaly flip the sprite
 	FLIPX
+
+	// Verticaly flip the sprite
 	FLIPY
+
+	// Fade off or fade in the sprite
 	FADE
+
+	// Rotate the sprite
 	TURN
+
+	// Play with HUE top change color of the sprite
 	HUE
-	MOVE_RELATIVE
-	MOVE_ABSOLUTE
+
+	// Move absoluty the sprite
+	MOVE
 )
 
 //////////////////////////////////////////// TYPES ////////////////////////////////////////////
@@ -159,7 +172,7 @@ type EffectOptions struct {
 	// Name of animation (default is omitted)
 	Animation 				string
 
-	// Effect= ZOOM, FLIPX, FLIPY, FADE, TURN
+	// Effect= ZOOM, FLIPX, FLIPY, FADE, TURN, MOVE
 	Effect 					int
 
 	// For FADE and FADEINOUT effects
@@ -177,7 +190,7 @@ type EffectOptions struct {
 	// For HUE effect
 	Red, Green, Blue		float64
 
-	// For MOVERELATIVE and MOVEABSOLUTE effect
+	// For MOVE effect
 	X,Y 					float64
 
 	// Duration of the effect
@@ -267,14 +280,13 @@ func (this *Sprite) AddEffect(options *EffectOptions) {
 	options.durationTime = time.Millisecond * time.Duration(options.Duration)
 
 	switch options.Effect {
-		case ZOOM :			this.zoom(options)
-		case FLIPX : 		this.flipX(options)
-		case FLIPY :		this.flipY(options)
-		case FADE : 		this.fade(options)
-		case TURN:			this.turn(options)
-		case HUE:			this.hue(options)
-		case MOVE_RELATIVE:	this.moveRelative(options)
-		case MOVE_ABSOLUTE:	this.moveAbsolute(options)
+		case ZOOM :		this.zoom(options)
+		case FLIPX : 	this.flipX(options)
+		case FLIPY :	this.flipY(options)
+		case FADE : 	this.fade(options)
+		case TURN:		this.turn(options)
+		case HUE:		this.hue(options)
+		case MOVE: 		this.move(options)
 	}
 }
 
@@ -388,26 +400,7 @@ func (this *Sprite) hue(options *EffectOptions) {
 	}
 }
 
-func (this *Sprite) moveRelative(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
-
-	e.xStart = this.X
-	e.yStart = this.Y
-	this.Animations[options.Animation].Effect = e
-
-	if options.Repeat == true {
-		e.repeatCallback = func() {
-			this.X = e.xStart 	// reset x position
-			this.Y = e.yStart 	// reset y position
-			e = nil 			// erase previous effect
-			this.moveRelative(options)
-		}
-	}
-}
-
-
-func (this *Sprite) moveAbsolute(options *EffectOptions) {
+func (this *Sprite) move(options *EffectOptions) {
 	e := new(AnimationEffect)
 	e.options 				= options
 
@@ -427,7 +420,7 @@ func (this *Sprite) moveAbsolute(options *EffectOptions) {
 			this.X = e.xStart 	// reset x position
 			this.Y = e.yStart 	// reset y position
 			e = nil 			// erase previous effect
-			this.moveAbsolute(options)
+			this.move(options)
 		}
 	}
 }
@@ -720,24 +713,7 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 							}
 							///////////////////////////////////////////////
 
-						case MOVE_RELATIVE :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.5
-								if 			where < step {
-									this.X=convertRange(where, &Range{min:0,max:step}, &Range{min:e.xStart,max:e.options.X+e.xStart})
-									this.Y=convertRange(where, &Range{min:0,max:step}, &Range{min:e.yStart,max:e.options.Y+e.yStart})
-								} else {
-									this.X=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.X+e.xStart,max:e.xStart})
-									this.Y=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Y+e.yStart,max:e.yStart})
-								}
-
-							} else { // only one way
-								this.X 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.xStart, max:e.options.X + e.xStart})
-								this.Y 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.yStart, max:e.options.Y + e.yStart})
-							}
-							///////////////////////////////////////////////
-
-						case MOVE_ABSOLUTE :
+						case MOVE :
 							if e.options.GoBack { // go and return
 								var step float64 = 0.5
 								if 			where < step {

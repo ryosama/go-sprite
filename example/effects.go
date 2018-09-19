@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	sprites [8]*sprite.Sprite
+	sprites [7]*sprite.Sprite
 )
 
 // update at every frame
@@ -87,11 +87,7 @@ func main() {
 	i++
 
 	// Move Relative X and Relative Y
-	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE_RELATIVE, X:10, Y:10, Duration:1000, Repeat:true, GoBack:true })
-	i++
-
-	// Move X and Y coords
-	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE_ABSOLUTE, X:WINDOW_WIDTH/2, Y:WINDOW_HEIGHT/2, Duration:1000, Repeat:true, GoBack:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE, X: sprites[i].X +10, Y:sprites[i].Y +10, Duration:1000, Repeat:true, GoBack:true })
 	i++
 
 
