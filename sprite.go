@@ -28,11 +28,12 @@ import (
 // create constant for effects
 const (
 	NO_EFFECT = iota
-	INFLATE
+	ZOOM
 	FLIPX
 	FLIPY
 	FADE
 	TURN
+	HUE
 )
 
 //////////////////////////////////////////// TYPES ////////////////////////////////////////////
@@ -61,6 +62,15 @@ type Sprite struct {
 
 	// Zoom in or out on Y axis
 	ZoomY				float64
+	
+	// Red multiplier
+	Red					float64
+
+	// Green multiplier
+	Green				float64
+
+	// Blue multiplier
+	Blue				float64
 
 	// Transparency
 	Alpha				float64
@@ -131,14 +141,12 @@ type SpriteAnimation struct {
 
 type AnimationEffect struct {
 	options 				*EffectOptions
-	zoomStart				float64
-	alphaStart				float64
-	angleStart				float64
-	clockwise 				bool
-	goback 					bool
+	zoomStart										float64
+	redStart, greenStart, blueStart, alphaStart	 	float64
+	angleStart										float64
 	duration 				time.Duration
 	timeStart,timeEnd		time.Time
-	callback				func()
+	repeatCallback			func()
 }
 
 /*
@@ -147,13 +155,14 @@ Create effect on sprite
 type EffectOptions struct {
 	// Name of animation (default is omitted)
 	Animation 				string
-	// Effect= INFLATE, DEFLATE, BREATHE, FLIPX, FLIPY, FADE, FADEINOUT
+
+	// Effect= ZOOM, FLIPX, FLIPY, FADE, TURN
 	Effect 					int
 
 	// For FADE and FADEINOUT effects
 	FadeFrom,FadeTo			float64
 
-	// For INFLATE, DEFLATE, BREATHE effects
+	// For ZOOM effects
 	Zoom 					float64
 
 	// For TURN effect
@@ -161,6 +170,9 @@ type EffectOptions struct {
 
 	// For TURN effect (in degres)
 	Angle 					float64
+
+	// For HUE effect
+	Red, Green, Blue		float64	
 
 	// Duration of the effect
 	Duration 				int
@@ -173,6 +185,9 @@ type EffectOptions struct {
 
 	// Repeat or not at the end of effect
 	Repeat 					bool
+
+	// function to launch afert one complete effect
+	Callback 				func()
 }
 
 //////////////////////////////////////////// CONSTRUCTORS ////////////////////////////////////////////
@@ -188,6 +203,9 @@ func NewSprite() *Sprite {
 	this.CurrentAnimation 	= "default"
 	this.ZoomX 				= 1
 	this.ZoomY 				= 1
+	this.Red 				= 1
+	this.Green 				= 1
+	this.Blue 				= 1
 	this.Alpha 				= 1
 	return this
 }
@@ -243,26 +261,27 @@ func (this *Sprite) AddEffect(options *EffectOptions) {
 	options.durationTime = time.Millisecond * time.Duration(options.Duration)
 
 	switch options.Effect {
-		case INFLATE :	this.inflate(options)
+		case ZOOM :		this.zoom(options)
 		case FLIPX : 	this.flipX(options)
 		case FLIPY :	this.flipY(options)
 		case FADE : 	this.fade(options)
 		case TURN:		this.turn(options)
+		case HUE:		this.hue(options)
 	}
 }
 
 
-func (this *Sprite) inflate(options *EffectOptions) {
+func (this *Sprite) zoom(options *EffectOptions) {
 	e := new(AnimationEffect)
 	e.options 				= options
 	e.zoomStart				= this.ZoomX
 	this.Animations[options.Animation].Effect = e
 
 	if options.Repeat == true {
-		e.callback = func() {
+		e.repeatCallback = func() {
 			this.ZoomX = e.zoomStart 	// reset zoom
 			e = nil 					// erase previous effect
-			this.inflate(options)
+			this.zoom(options)
 		}
 	}
 }
@@ -275,7 +294,7 @@ func (this *Sprite) flipX(options *EffectOptions) {
 	this.Animations[options.Animation].Effect = e
 
 	if options.Repeat == true {
-		e.callback = func() {
+		e.repeatCallback = func() {
 			this.ZoomX = e.zoomStart 	// reset zoom
 			e = nil 					// erase previous effect
 			this.flipX(options)
@@ -290,7 +309,7 @@ func (this *Sprite) flipY(options *EffectOptions) {
 	this.Animations[options.Animation].Effect = e
 
 	if options.Repeat == true {
-		e.callback = func() {
+		e.repeatCallback = func() {
 			this.ZoomY = e.zoomStart 	// reset zoom
 			e = nil 					// erase previous effect
 			this.flipY(options)
@@ -306,7 +325,7 @@ func (this *Sprite) fade(options *EffectOptions) {
 	this.Animations[options.Animation].Effect = e
 
 	if options.Repeat == true {
-		e.callback = func() {
+		e.repeatCallback = func() {
 			this.Alpha = e.alphaStart 	// reset alpha
 			e = nil 					// erase previous effect
 			this.fade(options)
@@ -322,10 +341,39 @@ func (this *Sprite) turn(options *EffectOptions) {
 	this.Animations[options.Animation].Effect = e
 
 	if options.Repeat == true {
-		e.callback = func() {
+		e.repeatCallback = func() {
 			this.Angle = e.angleStart 	// reset alpha
 			e = nil 				// erase previous effect
 			this.turn(options)
+		}
+	}
+}
+
+func (this *Sprite) hue(options *EffectOptions) {
+	e := new(AnimationEffect)
+	e.options 			= options
+
+	if e.options.Red == 0 {
+		e.options.Red = 1
+	}
+	if e.options.Green == 0 {
+		e.options.Green = 1
+	}
+	if e.options.Blue == 0 {
+		e.options.Blue = 1
+	}
+	e.redStart			= this.Red
+	e.greenStart		= this.Green
+	e.blueStart			= this.Blue
+	this.Animations[options.Animation].Effect = e
+
+	if options.Repeat == true {
+		e.repeatCallback = func() {
+			this.Red 	= e.redStart
+			this.Green 	= e.greenStart
+			this.Blue 	= e.blueStart
+			e = nil 					// erase previous effect
+			this.hue(options)
 		}
 	}
 }
@@ -470,7 +518,7 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 				if e.timeStart.IsZero() || e.timeStart.Unix()==0 {
 					e.timeStart = time.Now()
 					e.timeEnd 	= e.timeStart.Add(e.options.durationTime)
-					fmt.Printf("Demarre une animation %v\n            et la fin %v\n", e.timeStart, e.timeEnd)
+					//fmt.Printf("Demarre une animation %v\n            et la fin %v\n", e.timeStart, e.timeEnd)
 				}
 
 				now := time.Now()
@@ -484,7 +532,7 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 					//fmt.Printf("Effect:%d\n",e.options.Effect )
 
 					switch e.options.Effect {
-						case INFLATE :
+						case ZOOM :
 							if e.options.GoBack { // go and return
 								var step float64 = 0.5
 								if where < step {
@@ -559,22 +607,19 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 								var step float64 = 0.5
 								if 			where < step {
 									this.Alpha = convertRange(where,
-														&Range{min:0,max:step},
-														&Range{min:e.options.FadeFrom,max:e.options.FadeTo})
+																&Range{min:0,max:step},
+																&Range{min:e.options.FadeFrom,max:e.options.FadeTo})
 								} else {
 									this.Alpha = convertRange(where,
-														&Range{min:step,max:1},
-														&Range{min:e.options.FadeTo,max:e.options.FadeFrom})
+																&Range{min:step,max:1},
+																&Range{min:e.options.FadeTo,max:e.options.FadeFrom})
 								}
 
 							} else { // only one way
-								this.Alpha = convertRange(
-												where,
-												&Range{min:0,max:1},
-												&Range{min:e.options.FadeFrom, max:e.options.FadeTo},
-								)
+								this.Alpha = convertRange(where,
+															&Range{min:0,max:1},
+															&Range{min:e.options.FadeFrom, max:e.options.FadeTo})
 							}
-							
 							///////////////////////////////////////////////
 
 						case TURN :
@@ -600,16 +645,59 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 														&Range{min:0,max:1},
 														&Range{min:0,max:e.options.Angle * clockwise})
 							}
-							
+							///////////////////////////////////////////////
 
+							case HUE :
+							if e.options.GoBack { // go and return
+								var step float64 = 0.5
+								if 			where < step {
+									if e.options.Red != 1 {
+										this.Red 	= convertRange(where, &Range{min:0,max:step}, &Range{min:1,max:e.options.Red})
+									}
+									if e.options.Green != 1 {
+										this.Green 	= convertRange(where, &Range{min:0,max:step}, &Range{min:1,max:e.options.Green})
+									}
+									if e.options.Blue != 1 {
+										this.Blue 	= convertRange(where, &Range{min:0,max:step}, &Range{min:1,max:e.options.Blue})
+									}
+								} else {
+									if e.options.Red != 1 {
+										this.Red 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Red,max:1})
+									}
+									if e.options.Green != 1 {
+										this.Green 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Green,max:1})
+									}
+									if e.options.Blue != 1 {
+										this.Blue 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Blue,max:1})
+									}
+								}
+
+							} else { // only one way
+								if e.options.Red != 1 {
+									this.Red 	= convertRange(where, &Range{min:0,max:1}, &Range{min:1, max:e.options.Red})
+								}
+								if e.options.Green != 1 {
+									this.Green 	= convertRange(where, &Range{min:0,max:1}, &Range{min:1, max:e.options.Green})
+								}
+								if e.options.Blue != 1 {
+									this.Blue 	= convertRange(where, &Range{min:0,max:1}, &Range{min:1, max:e.options.Blue})
+								}
+							}
+							
 							///////////////////////////////////////////////
 
 					} // switch case
 
 				// animation finished
 				} else {
-					if e.callback != nil {
-						e.callback()
+					// repeat animation
+					if e.repeatCallback != nil {
+						e.repeatCallback()
+					}
+
+					// laucnh user Callback
+					if e.options.Callback != nil {
+						e.options.Callback()
 					}
 				}
 			} // if e.effect
@@ -626,7 +714,8 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 
 		options.GeoM.Skew( deg2rad(this.SkewX), deg2rad(this.SkewY) )
 		
-		options.ColorM.Scale(1.0, 1.0, 1.0, this.Alpha)
+		// change HUE and Alpha
+		options.ColorM.Scale(this.Red, this.Green, this.Blue, this.Alpha)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
