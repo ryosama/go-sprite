@@ -32,11 +32,8 @@ const (
 	// Zoom multiplier on the sprite
 	ZOOM
 
-	// Horizontaly flip the sprite
-	FLIPX
-
-	// Verticaly flip the sprite
-	FLIPY
+	// Flip the sprite horizontaly or verticaly
+	FLIP
 
 	// Fade off or fade in the sprite
 	FADE
@@ -49,6 +46,10 @@ const (
 
 	// Move absoluty the sprite
 	MOVE
+
+	// For Flip effect
+	HORIZONTALY = false
+	VERTICALY 	= true
 )
 
 //////////////////////////////////////////// TYPES ////////////////////////////////////////////
@@ -181,6 +182,9 @@ type EffectOptions struct {
 	// For TURN effect (in degres)
 	Angle 					float64
 
+	// HORIZONTALY or VERTICALY
+	Axis 					bool
+
 	// For HUE effect
 	Red, Green, Blue		float64
 
@@ -290,8 +294,7 @@ func (this *Sprite) AddEffect(options *EffectOptions) {
 
 	switch options.Effect {
 		case ZOOM :		this.zoom(options)
-		case FLIPX : 	this.flipX(options)
-		case FLIPY :	this.flipY(options)
+		case FLIP : 	this.flip(options)
 		case FADE : 	this.fade(options)
 		case TURN:		this.turn(options)
 		case HUE:		this.hue(options)
@@ -323,10 +326,14 @@ func (this *Sprite) zoom(options *EffectOptions) {
 }
 
 
-func (this *Sprite) flipX(options *EffectOptions) {
+func (this *Sprite) flip(options *EffectOptions) {
 	e := new(AnimationEffect)
 	e.options 				= options
-	e.zoomStart				= this.ZoomX
+	if e.options.Axis == HORIZONTALY {
+		e.zoomStart	= this.ZoomX
+	} else {
+		e.zoomStart	= this.ZoomY
+	}
 
 	if options.loopCounter == 0 { // first loop
 		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
@@ -337,32 +344,13 @@ func (this *Sprite) flipX(options *EffectOptions) {
 	
 	if options.Repeat == true {
 		e.repeatCallback = func() {
-			this.ZoomX = e.zoomStart 	// reset zoom
+			if e.options.Axis == HORIZONTALY {
+				this.ZoomX = e.zoomStart 	// reset zoom
+			} else {
+				this.ZoomY = e.zoomStart 	// reset zoom
+			}
 			e = nil 					// erase previous effect
-			this.flipX(options)
-		}
-	}
-
-	options.loopCounter++
-}
-
-func (this *Sprite) flipY(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
-	e.zoomStart				= this.ZoomY
-	
-	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
-	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
-	}
-
-	if options.Repeat == true {
-		e.repeatCallback = func() {
-			this.ZoomY = e.zoomStart 	// reset zoom
-			e = nil 					// erase previous effect
-			this.flipY(options)
+			this.flip(options)
 		}
 	}
 
@@ -809,7 +797,7 @@ func (this *Sprite) applyEffects(surface *ebiten.Image) {
 							this.ZoomY = zoomFactor
 							///////////////////////////////////////////////
 
-						case FLIPX :
+						case FLIP :
 							if e.options.GoBack { // go and return
 								var step float64 = 0.25
 								if 			where < step*1 {
@@ -830,31 +818,11 @@ func (this *Sprite) applyEffects(surface *ebiten.Image) {
 								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
 								}
 							}
-							this.ZoomX = zoomFactor
-							///////////////////////////////////////////////
-
-						case FLIPY :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.25
-								if 			where < step*1 {
-									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
-								} else if 	where < step*2 {
-								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
-								} else if 	where < step*3 {
-								 	zoomFactor = convertRange(where, &Range{min:step*2,max:step*3}, &Range{min:-1,max:0} )
-								} else {
-								 	zoomFactor = convertRange(where, &Range{min:step*3,max:step*4}, &Range{min:0,max:1} )
-								}
-
-							} else { // only one way
-								var step float64 = 0.5
-								if 			where < step*1 {
-									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
-								} else {
-								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
-								}
+							if e.options.Axis == HORIZONTALY {
+								this.ZoomX = zoomFactor
+							} else {
+								this.ZoomY = zoomFactor
 							}
-							this.ZoomY = zoomFactor
 							///////////////////////////////////////////////
 
 						case FADE :

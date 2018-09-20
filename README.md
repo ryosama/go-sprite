@@ -47,5 +47,3 @@ TODO
 ====
 
 - Add a video
-
-- Add pre-defined animation like in font-awesome-animation

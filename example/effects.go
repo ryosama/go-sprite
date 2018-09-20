@@ -68,11 +68,11 @@ func main() {
 
 
 	// Flip X and go back
-	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPX, Duration:1000, Repeat:true, GoBack:true})
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIP, Axis:sprite.HORIZONTALY, Duration:1000, Repeat:true, GoBack:true})
 	i++
 
 	// Flip Y and Go back
-	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPY, Duration:1000, Repeat:true, GoBack:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIP, Axis:sprite.VERTICALY, Duration:1000, Repeat:true, GoBack:true })
 	i++
 
 	// Fade in and out
