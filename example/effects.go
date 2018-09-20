@@ -13,7 +13,7 @@ const (
 )
 
 var (
-	sprites [7]*sprite.Sprite
+	sprites [8]*sprite.Sprite
 )
 
 // update at every frame
@@ -53,7 +53,6 @@ func main() {
 
 	i:=0
 
-
 	// Zoom in and out
 	sprites[i].AddEffect(&sprite.EffectOptions{
 							Animation:"default", // optional
@@ -65,6 +64,8 @@ func main() {
 							Callback:func(){ print("ZOOM Callback\n") },
 						})
 	i++
+
+
 
 	// Flip X and go back
 	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.FLIPX, Duration:1000, Repeat:true, GoBack:true})
@@ -82,12 +83,19 @@ func main() {
 	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.TURN, Angle:360, Duration:2000, Repeat:true, GoBack:true, Clockwise:true })
 	i++
 
-	// Hue Yellow
+	// Hue Red
 	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.HUE, Red:5,  Duration:1000, Repeat:true, GoBack:true })
 	i++
 
 	// Move Relative X and Relative Y
-	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE, X: sprites[i].X +10, Y:sprites[i].Y +10, Duration:1000, Repeat:true, GoBack:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE, X:sprites[i].X +10, Y:sprites[i].Y +10, Duration:1000, Repeat:true, GoBack:true })
+	i++
+
+	// multiple effects : Zoom->x3, HUE->Yellow, TURN->360°, MOVE-> x+100
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.ZOOM, Zoom:3, Duration:2000, Repeat:true, GoBack:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.HUE, Red:5, Green:5, Duration:2000, Repeat:true, GoBack:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.TURN, Angle:360, Duration:2000, Repeat:true })
+	sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.MOVE, X:sprites[i].X +100, Duration:2000, Repeat:true, GoBack:true})
 	i++
 
 
