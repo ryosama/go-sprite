@@ -52,6 +52,8 @@ const (
 	VERTICALY 	= true
 )
 
+var VIOLET color.RGBA = color.RGBA{ R:255, G:0, B:255, A:255 }
+
 //////////////////////////////////////////// TYPES ////////////////////////////////////////////
 
 type Sprite struct {
@@ -631,6 +633,10 @@ func (this *Sprite) Draw(surface *ebiten.Image) {
 		x1 := x0 + currentAnimation.StepWidth
 		r := image.Rect( x0 , 0, x1 , currentAnimation.StepHeight)
 		options.SourceRect = &r
+
+		if this.Borders {
+			this.DrawBorders(surface, VIOLET)
+		}
 
 		surface.DrawImage(currentAnimation.Image, options)
 

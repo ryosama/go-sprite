@@ -27,8 +27,6 @@ func update(surface *ebiten.Image) error {
 		sprites[i].Draw(surface)
 	}
 
-	//sprites[0].Draw(surface)
-
 	return nil
 }
 
