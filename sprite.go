@@ -1,5 +1,4 @@
-/*
-This package permits animations of sprites via the Ebiten library (http://www.github.com/hajimehoshi/ebiten)
+/*Package sprite permits animations of sprites via the Ebiten library (http://www.github.com/hajimehoshi/ebiten)
 
 Basic Usage :
 
@@ -11,255 +10,252 @@ mySprite.Position(WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
 mySprite.CurrentAnimation = "walk-right"
 mySprite.Speed = 2
 mySprite.Start()
-*/
-package sprite
+*/package sprite
 
 import (
-	"image"
-	"image/color"
 	"github.com/hajimehoshi/ebiten"
 	"github.com/hajimehoshi/ebiten/ebitenutil"
-	"time"
-	"math"
+	"image"
+	"image/color"
 	"log"
+	"math"
+	"time"
 	//"fmt"
 )
 
 // Constant effects
 const (
-	NO_EFFECT = iota
+	NoEffect = iota
 
 	// Zoom multiplier on the sprite
-	ZOOM
+	Zoom
 
 	// Flip the sprite horizontaly or verticaly
-	FLIP
+	Flip
 
 	// Fade off or fade in the sprite
-	FADE
+	Fade
 
 	// Rotate the sprite
-	TURN
+	Turn
 
-	// Play with HUE top change color of the sprite
-	HUE
+	// Play with Hue top change color of the sprite
+	Hue
 
 	// Move absoluty the sprite
-	MOVE
+	Move
 
 	// For Flip effect
-	HORIZONTALY = false
-	VERTICALY 	= true
+	Horizontaly = false
+	Verticaly   = true
 )
 
-var VIOLET color.RGBA = color.RGBA{ R:255, G:0, B:255, A:255 }
+var violet = color.RGBA{R: 255, G: 0, B: 255, A: 255}
 
-//////////////////////////////////////////// TYPES ////////////////////////////////////////////
-
+/*Sprite contains the sprite, animations and effects */
 type Sprite struct {
 	// Animation label currently displayed
-	CurrentAnimation	string
+	CurrentAnimation string
 
 	// Array of animations
-	Animations 			map[string]*SpriteAnimation
+	Animations map[string]*Animation
 
 	// X coordinates of the sprite (in pixel)
-	X 					float64
+	X float64
 
 	// Y coordinate of the sprite (in pixel)
-	Y 					float64
+	Y float64
 
 	// Speed is in pixel/frame
-	Speed				float64
+	Speed float64
 
 	// Direction is an Angle in degres
-	Direction			float64
+	Direction float64
 
 	// Zoom in or out on X axis
-	ZoomX				float64
+	ZoomX float64
 
 	// Zoom in or out on Y axis
-	ZoomY				float64
-	
+	ZoomY float64
+
 	// Colors multipliers
-	Red, Green, Blue	float64
+	Red, Green, Blue float64
 
 	// Transparency
-	Alpha				float64
+	Alpha float64
 
 	// Angle of rotation in degres
-	Angle				float64
+	Angle float64
 
 	// Skew on X axis in degres
-	SkewX				float64
+	SkewX float64
 
 	// Skew on Y axis in degres
-	SkewY				float64
+	SkewY float64
 
 	// Visibility of the sprite
-	Visible				bool
+	Visible bool
 
 	// Animated or not
-	Animated			bool
+	Animated bool
 
 	// Displace X and Y coordonnate to the center of the sprite
-	CenterCoordonnates	bool
+	CenterCoordonnates bool
 
 	// Draw debug borders around sprite
-	Borders				bool
+	Borders bool
 }
 
-type SpriteAnimation struct {
+/*Animation contains animations and effects */
+type Animation struct {
 	// File path of the animation
 	// Step of the animation must be the same width on one line
-	Path 							string
+	Path string
 
 	// ebiten.Image generated
-	Image 							*ebiten.Image
+	Image *ebiten.Image
 
 	// Number of steps for the total animation
-	Steps 							int
+	Steps int
 
 	// Current step displayed
-	CurrentStep 	 				int
+	CurrentStep int
 
 	// Where to start the animation
-	FirstStep 						int
+	FirstStep int
 
 	// Width of the animation steps (in pixel)
-	StepWidth 						int
+	StepWidth int
 
 	// Height of the animation steps (in pixel)
-	StepHeight 						int
+	StepHeight int
 
 	// Total duration of the animation in millisecond
-	Duration						time.Duration
+	Duration time.Duration
 
 	// Total time for one step in millisecond
-	OneStepDuration					time.Duration
+	OneStepDuration time.Duration
 
 	// Effects object
-	Effects 						[]*AnimationEffect
+	Effects []*animationEffect
 
 	// Animation once and disapared
-	RunOnce 						bool
+	RunOnce bool
 
 	// Callback after run once
-	callbackAfterRunOnce 			func(*Sprite)
+	callbackAfterRunOnce func(*Sprite)
 
 	// Start time of the current step
-	currentStepTimeStart 			time.Time
+	currentStepTimeStart time.Time
 }
 
-type AnimationEffect struct {
-	options 				*EffectOptions
-	zoomStart										float64
-	redStart, greenStart, blueStart, alphaStart	 	float64
-	angleStart										float64
-	xStart, yStart									float64
-	duration 				time.Duration
-	timeStart,timeEnd		time.Time
-	repeatCallback			func()
+type animationEffect struct {
+	options                                     *EffectOptions
+	zoomStart                                   float64
+	redStart, greenStart, blueStart, alphaStart float64
+	angleStart                                  float64
+	xStart, yStart                              float64
+	duration                                    time.Duration
+	timeStart, timeEnd                          time.Time
+	repeatCallback                              func()
 }
 
-/*
-Create effect on sprite
-*/
+//EffectOptions contains options for the effect
 type EffectOptions struct {
 	// Name of animation (default is omitted)
-	Animation 				string
+	Animation string
 
-	// Effect= ZOOM, FLIPX, FLIPY, FADE, TURN, MOVE
-	Effect 					int
+	// Effect= Zoom, FlipX, FlipY, Fade, Turn, Move
+	Effect int
 
-	// For FADE and FADEINOUT effects
-	FadeFrom,FadeTo			float64
+	// For Fade and FadeINOUT effects
+	FadeFrom, FadeTo float64
 
-	// For ZOOM effects
-	Zoom 					float64
+	// For Zoom effects
+	Zoom float64
 
-	// For TURN effect
-	Clockwise 				bool
+	// For Turn effect
+	Clockwise bool
 
-	// For TURN effect (in degres)
-	Angle 					float64
+	// For Turn effect (in degres)
+	Angle float64
 
-	// HORIZONTALY or VERTICALY
-	Axis 					bool
+	// Horizontaly or Verticaly
+	Axis bool
 
-	// For HUE effect
-	Red, Green, Blue		float64
+	// For Hue effect
+	Red, Green, Blue float64
 
-	// For MOVE effect
-	X,Y 					float64
+	// For Move effect
+	X, Y float64
 
 	// Duration of the effect
-	Duration 				int
+	Duration int
 
 	// Duration of the effect (in time.Duration)
-	durationTime 			time.Duration
+	durationTime time.Duration
 
 	// Redo the animation on the counter way
-	GoBack 					bool
+	GoBack bool
 
 	// Repeat or not at the end of effect
-	Repeat 					bool
+	Repeat bool
 
 	// function to launch afert one complete effect
-	Callback 				func()
+	Callback func()
 
 	// index of the effect in the stack
-	index 					int
+	index int
 
 	// Count the number of loop in animation
-	loopCounter				int64
+	loopCounter int64
 }
 
 //////////////////////////////////////////// CONSTRUCTORS ////////////////////////////////////////////
 
-/*
-Create a new sprite
-*/
+//NewSprite creates a new sprite
 func NewSprite() *Sprite {
-	this := new(Sprite)
-	this.Animations 		= make(map[string]*SpriteAnimation)
-	this.Visible 			= true
-	this.Animated  			= true
-	this.CurrentAnimation 	= "default"
-	this.ZoomX 				= 1
-	this.ZoomY 				= 1
-	this.Red 				= 1
-	this.Green 				= 1
-	this.Blue 				= 1
-	this.Alpha 				= 1
-	return this
+	sprite := new(Sprite)
+	sprite.Animations = make(map[string]*Animation)
+	sprite.Visible = true
+	sprite.Animated = true
+	sprite.CurrentAnimation = "default"
+	sprite.ZoomX = 1
+	sprite.ZoomY = 1
+	sprite.Red = 1
+	sprite.Green = 1
+	sprite.Blue = 1
+	sprite.Alpha = 1
+	return sprite
 }
 
-func newSpriteAnimation(path string,duration int, steps int, filter ebiten.Filter) *SpriteAnimation {
+func newAnimation(path string, duration int, steps int, filter ebiten.Filter) *Animation {
 	var err error
-	this 			:= new(SpriteAnimation)
-	this.Path 		= path
-	this.Image, _,err = ebitenutil.NewImageFromFile(path, filter)
-	if err != nil { log.Fatal(err) }
-	this.Steps 		= steps
-	this.Duration 	= time.Millisecond * time.Duration(duration)
+	animation := new(Animation)
+	animation.Path = path
+	animation.Image, _, err = ebitenutil.NewImageFromFile(path, filter)
+	if err != nil {
+		log.Fatal(err)
+	}
+	animation.Steps = steps
+	animation.Duration = time.Millisecond * time.Duration(duration)
 
-	width, height := this.Image.Size()
-	this.StepWidth 	= width/this.Steps
-	this.StepHeight = height
+	width, height := animation.Image.Size()
+	animation.StepWidth = width / animation.Steps
+	animation.StepHeight = height
 
-	this.currentStepTimeStart = time.Now()
-	this.OneStepDuration = time.Duration(int(this.Duration) / this.Steps)
+	animation.currentStepTimeStart = time.Now()
+	animation.OneStepDuration = time.Duration(int(animation.Duration) / animation.Steps)
 
-	this.Effects = make([]*AnimationEffect,0)
+	animation.Effects = make([]*animationEffect, 0)
 
-	return this
+	return animation
 }
 
 //////////////////////////////////////////// METHODS ////////////////////////////////////////////
 
 /*
-Add an animation to the sprite
+AddAnimation adds an animation to the sprite
 
 "label" is the tag for the animation
 
@@ -271,23 +267,23 @@ Add an animation to the sprite
 
 "filter" is ebiten.FilterDefault or ebiten.FilterNearest  or ebiten.FilterLinear
 
-Example : 
+Example :
 
 mySprite.AddAnimation("walk-right",	"walk_right.png", 700, 6, ebiten.FilterDefault)
 */
-func (this *Sprite) AddAnimation(label string, path string, duration int, steps int, filter ebiten.Filter) {
-	this.Animations[label] = newSpriteAnimation(path,duration,steps,filter)
+func (sprite *Sprite) AddAnimation(label string, path string, duration int, steps int, filter ebiten.Filter) {
+	sprite.Animations[label] = newAnimation(path, duration, steps, filter)
 }
 
 /*
-Add an effect to the sprite. You can cumulate effects at the same time
+AddEffect adds an effect to the sprite. You can cumulate effects at the same time
 
-Example : 
+Example :
 
-sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.ZOOM, Zoom:3, Duration:2000, Repeat:true, GoBack:true })
+sprites[i].AddEffect(&sprite.EffectOptions{ Effect: sprite.Zoom, Zoom:3, Duration:2000, Repeat:true, GoBack:true })
 
 */
-func (this *Sprite) AddEffect(options *EffectOptions) {
+func (sprite *Sprite) AddEffect(options *EffectOptions) {
 	if options.Animation == "" {
 		options.Animation = "default"
 	}
@@ -295,121 +291,124 @@ func (this *Sprite) AddEffect(options *EffectOptions) {
 	options.durationTime = time.Millisecond * time.Duration(options.Duration)
 
 	switch options.Effect {
-		case ZOOM :		this.zoom(options)
-		case FLIP : 	this.flip(options)
-		case FADE : 	this.fade(options)
-		case TURN:		this.turn(options)
-		case HUE:		this.hue(options)
-		case MOVE: 		this.move(options)
+	case Zoom:
+		sprite.zoom(options)
+	case Flip:
+		sprite.flip(options)
+	case Fade:
+		sprite.fade(options)
+	case Turn:
+		sprite.turn(options)
+	case Hue:
+		sprite.hue(options)
+	case Move:
+		sprite.move(options)
 	}
 }
 
-func (this *Sprite) zoom(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
-	e.zoomStart				= this.ZoomX
-	
+func (sprite *Sprite) zoom(options *EffectOptions) {
+	e := new(animationEffect)
+	e.options = options
+	e.zoomStart = sprite.ZoomX
+
 	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
+		sprite.Animations[options.Animation].Effects = append(sprite.Animations[options.Animation].Effects, e)
+		options.index = len(sprite.Animations[options.Animation].Effects) - 1 // store index
 	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
+		sprite.Animations[options.Animation].Effects[options.index] = e
 	}
 
 	if options.Repeat == true {
 		e.repeatCallback = func() {
-			this.ZoomX = e.zoomStart 	// reset zoom
-			e = nil 					// erase previous effect
-			this.zoom(options)
+			sprite.ZoomX = e.zoomStart // reset zoom
+			e = nil                    // erase previous effect
+			sprite.zoom(options)
 		}
 	}
 
 	options.loopCounter++
 }
 
-
-func (this *Sprite) flip(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
-	if e.options.Axis == HORIZONTALY {
-		e.zoomStart	= this.ZoomX
+func (sprite *Sprite) flip(options *EffectOptions) {
+	e := new(animationEffect)
+	e.options = options
+	if e.options.Axis == Horizontaly {
+		e.zoomStart = sprite.ZoomX
 	} else {
-		e.zoomStart	= this.ZoomY
+		e.zoomStart = sprite.ZoomY
 	}
 
 	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
+		sprite.Animations[options.Animation].Effects = append(sprite.Animations[options.Animation].Effects, e)
+		options.index = len(sprite.Animations[options.Animation].Effects) - 1 // store index
 	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
+		sprite.Animations[options.Animation].Effects[options.index] = e
 	}
-	
+
 	if options.Repeat == true {
 		e.repeatCallback = func() {
-			if e.options.Axis == HORIZONTALY {
-				this.ZoomX = e.zoomStart 	// reset zoom
+			if e.options.Axis == Horizontaly {
+				sprite.ZoomX = e.zoomStart // reset zoom
 			} else {
-				this.ZoomY = e.zoomStart 	// reset zoom
+				sprite.ZoomY = e.zoomStart // reset zoom
 			}
-			e = nil 					// erase previous effect
-			this.flip(options)
+			e = nil // erase previous effect
+			sprite.flip(options)
 		}
 	}
 
 	options.loopCounter++
 }
 
+func (sprite *Sprite) fade(options *EffectOptions) {
+	e := new(animationEffect)
+	e.options = options
+	e.alphaStart = sprite.Alpha
 
-func (this *Sprite) fade(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
-	e.alphaStart			= this.Alpha
-	
 	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
+		sprite.Animations[options.Animation].Effects = append(sprite.Animations[options.Animation].Effects, e)
+		options.index = len(sprite.Animations[options.Animation].Effects) - 1 // store index
 	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
+		sprite.Animations[options.Animation].Effects[options.index] = e
 	}
 
 	if options.Repeat == true {
 		e.repeatCallback = func() {
-			this.Alpha = e.alphaStart 	// reset alpha
-			e = nil 					// erase previous effect
-			this.fade(options)
+			sprite.Alpha = e.alphaStart // reset alpha
+			e = nil                     // erase previous effect
+			sprite.fade(options)
 		}
 	}
 
 	options.loopCounter++
 }
 
+func (sprite *Sprite) turn(options *EffectOptions) {
+	e := new(animationEffect)
+	e.options = options
+	e.angleStart = sprite.Angle
 
-func (this *Sprite) turn(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
-	e.angleStart			= this.Angle
-	
 	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
+		sprite.Animations[options.Animation].Effects = append(sprite.Animations[options.Animation].Effects, e)
+		options.index = len(sprite.Animations[options.Animation].Effects) - 1 // store index
 	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
+		sprite.Animations[options.Animation].Effects[options.index] = e
 	}
 
 	if options.Repeat == true {
 		e.repeatCallback = func() {
-			this.Angle = e.angleStart 	// reset alpha
-			e = nil 				// erase previous effect
-			this.turn(options)
+			sprite.Angle = e.angleStart // reset alpha
+			e = nil                     // erase previous effect
+			sprite.turn(options)
 		}
 	}
 
 	options.loopCounter++
 }
 
-func (this *Sprite) hue(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 			= options
+func (sprite *Sprite) hue(options *EffectOptions) {
+	e := new(animationEffect)
+	e.options = options
 
 	// init value
 	if e.options.Red == 0 {
@@ -422,128 +421,117 @@ func (this *Sprite) hue(options *EffectOptions) {
 		e.options.Blue = 1
 	}
 
-	e.redStart			= this.Red
-	e.greenStart		= this.Green
-	e.blueStart			= this.Blue
+	e.redStart = sprite.Red
+	e.greenStart = sprite.Green
+	e.blueStart = sprite.Blue
 
 	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
+		sprite.Animations[options.Animation].Effects = append(sprite.Animations[options.Animation].Effects, e)
+		options.index = len(sprite.Animations[options.Animation].Effects) - 1 // store index
 	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
+		sprite.Animations[options.Animation].Effects[options.index] = e
 	}
 
 	if options.Repeat == true {
 		e.repeatCallback = func() {
 			//fmt.Printf("DEBUG z.redStart:%f  z.greenStart:%f  z.blueStart:%f\n", e.redStart, e.greenStart, e.blueStart)
-			this.Red 	= e.redStart
-			this.Green 	= e.greenStart
-			this.Blue 	= e.blueStart
-			e = nil 					// erase previous effect
-			this.hue(options)
+			sprite.Red = e.redStart
+			sprite.Green = e.greenStart
+			sprite.Blue = e.blueStart
+			e = nil // erase previous effect
+			sprite.hue(options)
 		}
 	}
 
 	options.loopCounter++
 }
 
-func (this *Sprite) move(options *EffectOptions) {
-	e := new(AnimationEffect)
-	e.options 				= options
+func (sprite *Sprite) move(options *EffectOptions) {
+	e := new(animationEffect)
+	e.options = options
 
 	if e.options.X == 0 {
-		e.options.X = this.X
+		e.options.X = sprite.X
 	}
 	if e.options.Y == 0 {
-		e.options.Y = this.Y
+		e.options.Y = sprite.Y
 	}
 
-	e.xStart = this.X
-	e.yStart = this.Y
-	
+	e.xStart = sprite.X
+	e.yStart = sprite.Y
+
 	if options.loopCounter == 0 { // first loop
-		this.Animations[options.Animation].Effects = append(this.Animations[options.Animation].Effects, e)
-		options.index = len(this.Animations[options.Animation].Effects)-1 // store index
+		sprite.Animations[options.Animation].Effects = append(sprite.Animations[options.Animation].Effects, e)
+		options.index = len(sprite.Animations[options.Animation].Effects) - 1 // store index
 	} else {
-		this.Animations[options.Animation].Effects[options.index] = e
+		sprite.Animations[options.Animation].Effects[options.index] = e
 	}
 
 	if options.Repeat == true {
 		e.repeatCallback = func() {
-			this.X = e.xStart 	// reset x position
-			this.Y = e.yStart 	// reset y position
-			e = nil 			// erase previous effect
-			this.move(options)
+			sprite.X = e.xStart // reset x position
+			sprite.Y = e.yStart // reset y position
+			e = nil             // erase previous effect
+			sprite.move(options)
 		}
 	}
 
-	options.loopCounter++	
+	options.loopCounter++
 }
 
-/*
-Return width of the current animation displayed
-*/
-func (this *Sprite) GetWidth() float64 {
-	currentAnimation := this.Animations[this.CurrentAnimation]
+//GetWidth returns width of the current animation displayed
+func (sprite *Sprite) GetWidth() float64 {
+	currentAnimation := sprite.Animations[sprite.CurrentAnimation]
 	return float64(currentAnimation.StepWidth)
 }
 
-/*
-Return height of the current animation displayed
-*/
-func (this *Sprite) GetHeight() float64 {
-	currentAnimation := this.Animations[this.CurrentAnimation]
+//GetHeight returns height of the current animation displayed
+func (sprite *Sprite) GetHeight() float64 {
+	currentAnimation := sprite.Animations[sprite.CurrentAnimation]
 	return float64(currentAnimation.StepHeight)
 }
 
-/*
-Hide the sprite
-*/
-func (this *Sprite) Hide() {
-	this.Visible = false
+//Hide the sprite
+func (sprite *Sprite) Hide() {
+	sprite.Visible = false
 }
 
-/*
-Show the sprite
-*/
-func (this *Sprite) Show() {
-	this.Visible = true
+//Show the sprite
+func (sprite *Sprite) Show() {
+	sprite.Visible = true
 }
 
-/*
-Toogle visibility of the sprite
-*/
-func (this *Sprite) ToogleVisibility() {
-	if this.Visible {
-		this.Hide()
+//ToogleVisibility toogle visibility of the sprite
+func (sprite *Sprite) ToogleVisibility() {
+	if sprite.Visible {
+		sprite.Hide()
 	} else {
-		this.Show()
+		sprite.Show()
 	}
 }
 
 /*
-Set X and Y coordonnates of the sprite
+Position sets or retrieve X and Y coordonnates of the sprite
 
 Return X and Y coordonnates
 
 Exemple :
 mySprite.Position(WINDOW_WIDTH/2, WINDOW_HEIGHT/2)
 
-or 
+or
 
 x,y := mySprite.Position()
 */
-func (this *Sprite) Position(arg... float64) (float64,float64) {
-	if len(arg)==2 {
-		this.X = arg[0]
-		this.Y = arg[1]
+func (sprite *Sprite) Position(arg ...float64) (float64, float64) {
+	if len(arg) == 2 {
+		sprite.X = arg[0]
+		sprite.Y = arg[1]
 	}
-	return this.X, this.Y
+	return sprite.X, sprite.Y
 }
 
-
 /*
-Set or retrieve Zoom factor
+Zoom sets or retrieve Zoom factor
 
 Exemple :
 mySprite.Zoom(1.5)    // set both ZoomX and ZoomY to 1.5
@@ -552,31 +540,29 @@ mySprite.Zoom(1.5, 2) // set ZoomX to 1.5 and ZoomY to 2
 
 zoomX, zoomY := mySprite.Zoom()
 */
-func (this *Sprite) Zoom(arg... float64) (float64,float64) {
-	if len(arg)==1 {
-		this.ZoomX = arg[0]
-		this.ZoomY = arg[0]
-	} else if len(arg)==2 {
-		this.ZoomX = arg[0]
-		this.ZoomY = arg[1]
+func (sprite *Sprite) Zoom(arg ...float64) (float64, float64) {
+	if len(arg) == 1 {
+		sprite.ZoomX = arg[0]
+		sprite.ZoomY = arg[0]
+	} else if len(arg) == 2 {
+		sprite.ZoomX = arg[0]
+		sprite.ZoomY = arg[1]
 	}
-	return this.ZoomX, this.ZoomY
+	return sprite.ZoomX, sprite.ZoomY
 }
 
-
 /*
-Set rotation angle (in degres)
+Rotate sets rotation angle (in degres)
 
 Exemple :
 mySprite.Rotate(45)    // the same as mySprite.Angle = 45
 */
-func (this *Sprite) Rotate(angle float64) {
-	this.Angle = angle
+func (sprite *Sprite) Rotate(angle float64) {
+	sprite.Angle = angle
 }
 
-
 /*
-Set or retrieve Skew factor (in degres)
+Skew sets or retrieve Skew factor (in degres)
 
 Exemple :
 mySprite.Skew(20)    // set both SkewX and SkewY to 20
@@ -585,170 +571,154 @@ mySprite.Skew(20, 40) // set SkewX to 20 and SkewY to 40
 
 skewX, skewY := mySprite.Skew()
 */
-func (this *Sprite) Skew(arg... float64) (float64,float64) {
-	if len(arg)==1 {
-		this.SkewX = arg[0]
-		this.SkewY = arg[0]
-	} else if len(arg)==2 {
-		this.SkewX = arg[0]
-		this.SkewY = arg[1]
+func (sprite *Sprite) Skew(arg ...float64) (float64, float64) {
+	if len(arg) == 1 {
+		sprite.SkewX = arg[0]
+		sprite.SkewY = arg[0]
+	} else if len(arg) == 2 {
+		sprite.SkewX = arg[0]
+		sprite.SkewY = arg[1]
 	}
-	return this.SkewX, this.SkewY
+	return sprite.SkewX, sprite.SkewY
 }
 
-
-
-/*
-Calculate new coordonnates and draw the sprite on the screen, after drawing, go to the next step of animation
-*/
-func (this *Sprite) Draw(surface *ebiten.Image) {
-	if this.Visible {
-		currentAnimation := this.Animations[this.CurrentAnimation] // SpriteAnimation object
+//Draw calculates new coordonnates and draw the sprite on the screen, after drawing, go to the next step of animation
+func (sprite *Sprite) Draw(surface *ebiten.Image) {
+	if sprite.Visible {
+		currentAnimation := sprite.Animations[sprite.CurrentAnimation] // Animation object
 
 		options := &ebiten.DrawImageOptions{}
-		
-		// move sprite x,y
-		angleRad := this.Direction * math.Pi / 180 // convert degres into radians
-		this.Y -= this.Speed * math.Sin(angleRad)
-		this.X += this.Speed * math.Cos(angleRad)
-		
-		// apply diffrents effects
-		this.applyEffects(surface)
-		
-		// apply modification
-		if this.CenterCoordonnates {
-			options.GeoM.Translate(-float64(this.GetWidth())/2, -float64(this.GetHeight())/2)
-		}
-		options.GeoM.Scale(this.ZoomX, this.ZoomY)
-		options.GeoM.Rotate( deg2rad(this.Angle) )
-		options.GeoM.Translate(this.X , this.Y)
 
-		options.GeoM.Skew( deg2rad(this.SkewX), deg2rad(this.SkewY) )
-		
-		// change HUE and Alpha
-		options.ColorM.Scale(this.Red, this.Green, this.Blue, this.Alpha)
+		// move sprite x,y
+		angleRad := sprite.Direction * math.Pi / 180 // convert degres into radians
+		sprite.Y -= sprite.Speed * math.Sin(angleRad)
+		sprite.X += sprite.Speed * math.Cos(angleRad)
+
+		// apply diffrents effects
+		sprite.applyEffects(surface)
+
+		// apply modification
+		if sprite.CenterCoordonnates {
+			options.GeoM.Translate(-float64(sprite.GetWidth())/2, -float64(sprite.GetHeight())/2)
+		}
+		options.GeoM.Scale(sprite.ZoomX, sprite.ZoomY)
+		options.GeoM.Rotate(deg2rad(sprite.Angle))
+		options.GeoM.Translate(sprite.X, sprite.Y)
+
+		options.GeoM.Skew(deg2rad(sprite.SkewX), deg2rad(sprite.SkewY))
+
+		// change Hue and Alpha
+		options.ColorM.Scale(sprite.Red, sprite.Green, sprite.Blue, sprite.Alpha)
 
 		// Choose current image inside animation
 		x0 := currentAnimation.CurrentStep * currentAnimation.StepWidth
 		x1 := x0 + currentAnimation.StepWidth
-		r := image.Rect( x0 , 0, x1 , currentAnimation.StepHeight)
+		r := image.Rect(x0, 0, x1, currentAnimation.StepHeight)
 		options.SourceRect = &r
 
-		if this.Borders {
-			this.DrawBorders(surface, VIOLET)
+		if sprite.Borders {
+			sprite.DrawBorders(surface, violet)
 		}
 
 		surface.DrawImage(currentAnimation.Image, options)
 
-		this.NextStep()
+		sprite.NextStep()
 	}
 }
 
-func (this *Sprite) DrawBorders(surface *ebiten.Image, c color.Color) {
-	var x,y,x1,y1 float64
-	if this.CenterCoordonnates {
-		x 	= math.Round(this.X - this.GetWidth()/2 * this.ZoomX )
-		y 	= math.Round(this.Y - this.GetHeight()/2* this.ZoomY )
-		
+//DrawBorders draw debug borders around the sprite
+func (sprite *Sprite) DrawBorders(surface *ebiten.Image, c color.Color) {
+	var x, y, x1, y1 float64
+	if sprite.CenterCoordonnates {
+		x = math.Round(sprite.X - sprite.GetWidth()/2*sprite.ZoomX)
+		y = math.Round(sprite.Y - sprite.GetHeight()/2*sprite.ZoomY)
+
 	} else {
-		x 	= this.X
-		y 	= this.Y
+		x = sprite.X
+		y = sprite.Y
 	}
-	x1 	= math.Round(x + this.GetWidth() * this.ZoomX)
-	y1 	= math.Round(y + this.GetHeight() * this.ZoomY)
+	x1 = math.Round(x + sprite.GetWidth()*sprite.ZoomX)
+	y1 = math.Round(y + sprite.GetHeight()*sprite.ZoomY)
 
-	ebitenutil.DrawLine(surface, x,  y, x1,  y, c) 		// top
-	ebitenutil.DrawLine(surface, x, y1, x1, y1, c)		// bottom
-	ebitenutil.DrawLine(surface, x,  y,  x, y1, c)		// left
-	ebitenutil.DrawLine(surface,x1,  y, x1, y1, c)		// right
+	ebitenutil.DrawLine(surface, x, y, x1, y, c)   // top
+	ebitenutil.DrawLine(surface, x, y1, x1, y1, c) // bottom
+	ebitenutil.DrawLine(surface, x, y, x, y1, c)   // left
+	ebitenutil.DrawLine(surface, x1, y, x1, y1, c) // right
 }
 
-
-/*
-Start the animation (Reset+Show+Resume)
-*/
-func (this *Sprite) Start() {
-	this.Reset()
-	this.Show()
-	this.Resume()
+//Start the animation (Reset+Show+Resume)
+func (sprite *Sprite) Start() {
+	sprite.Reset()
+	sprite.Show()
+	sprite.Resume()
 }
 
 /*
-Start the animation only one time (Reset+Show+Resume)
+RunOnce start the animation only one time (Reset+Show+Resume)
 
-After running this, call the callback and pass the sprite pointer as argument
+After running animation, call the callback and pass the sprite pointer as argument
 */
-func (this *Sprite) RunOnce( c func(*Sprite) ) {
-	currentAnimation := this.Animations[this.CurrentAnimation]
+func (sprite *Sprite) RunOnce(c func(*Sprite)) {
+	currentAnimation := sprite.Animations[sprite.CurrentAnimation]
 	currentAnimation.RunOnce = true
 	currentAnimation.callbackAfterRunOnce = c
-	this.Reset()
-	this.Show()
-	this.Resume()
+	sprite.Reset()
+	sprite.Show()
+	sprite.Resume()
 }
 
-/*
-Stop the animation (Reset+Pause)
-*/
-func (this *Sprite) Stop() {
-	this.Reset()
-	this.Pause()
+//Stop the animation (Reset+Pause)
+func (sprite *Sprite) Stop() {
+	sprite.Reset()
+	sprite.Pause()
 }
 
-/*
-Reset current step to the first step of the animation
-*/
-func (this *Sprite) Reset() {
-	currentAnimation := this.Animations[this.CurrentAnimation]
+//Reset current step to the first step of the animation
+func (sprite *Sprite) Reset() {
+	currentAnimation := sprite.Animations[sprite.CurrentAnimation]
 	currentAnimation.CurrentStep = currentAnimation.FirstStep
 }
 
-/*
-Pause the animation
-*/
-func (this *Sprite) Pause() {
-	this.Animated = false
+//Pause the animation
+func (sprite *Sprite) Pause() {
+	sprite.Animated = false
 }
 
-/*
-Resume the animation
-*/
-func (this *Sprite) Resume() {
-	this.Animated = true
+//Resume the animation
+func (sprite *Sprite) Resume() {
+	sprite.Animated = true
 }
 
-/*
-Toogle animation status
-*/
-func (this *Sprite) ToogleAnimation() {
-	if this.Animated {
-		this.Pause()
+//ToogleAnimation toogle animation status
+func (sprite *Sprite) ToogleAnimation() {
+	if sprite.Animated {
+		sprite.Pause()
 	} else {
-		this.Resume()
+		sprite.Resume()
 	}
 }
 
 /*
-Go to the next step of animation
+NextStep go to the next step of animation
 
 Return true if animation go to the next step or false if step duration is not finish
 */
-func (this *Sprite) NextStep() bool {
-	currentAnimation := this.Animations[this.CurrentAnimation]
-	if this.Animated {
-		now 		:= time.Now()
-		nextStepAt 	:= currentAnimation.currentStepTimeStart.Add(currentAnimation.OneStepDuration)
+func (sprite *Sprite) NextStep() bool {
+	currentAnimation := sprite.Animations[sprite.CurrentAnimation]
+	if sprite.Animated {
+		now := time.Now()
+		nextStepAt := currentAnimation.currentStepTimeStart.Add(currentAnimation.OneStepDuration)
 
 		if now.Sub(nextStepAt) > 0 { // time to change the current step
 			currentAnimation.CurrentStep++ // next step
 			if currentAnimation.CurrentStep+1 > currentAnimation.Steps {
-				if currentAnimation.RunOnce {  // run only one time
-					this.Stop()
-					this.Hide()
-					currentAnimation.callbackAfterRunOnce(this)
+				if currentAnimation.RunOnce { // run only one time
+					sprite.Stop()
+					sprite.Hide()
+					currentAnimation.callbackAfterRunOnce(sprite)
 
 				} else {
-					this.Reset() // restart at the end of the animation
+					sprite.Reset() // restart at the end of the animation
 				}
 			}
 			currentAnimation.currentStepTimeStart = now
@@ -758,10 +728,8 @@ func (this *Sprite) NextStep() bool {
 	return false
 }
 
-
-
-func (this *Sprite) applyEffects(surface *ebiten.Image) {
-	currentAnimation := this.Animations[this.CurrentAnimation]
+func (sprite *Sprite) applyEffects(surface *ebiten.Image) {
+	currentAnimation := sprite.Animations[sprite.CurrentAnimation]
 
 	for _, e := range currentAnimation.Effects { // foreach Effects in the stack
 
@@ -770,9 +738,9 @@ func (this *Sprite) applyEffects(surface *ebiten.Image) {
 		if e != nil {
 			if e.options.Effect > 0 {
 				// first drawing ? defined the time for first step
-				if e.timeStart.IsZero() || e.timeStart.Unix()==0 {
+				if e.timeStart.IsZero() || e.timeStart.Unix() == 0 {
 					e.timeStart = time.Now()
-					e.timeEnd 	= e.timeStart.Add(e.options.durationTime)
+					e.timeEnd = e.timeStart.Add(e.options.durationTime)
 					//fmt.Printf("Demarre une animation %v\n            et la fin %v\n", e.timeStart, e.timeEnd)
 				}
 
@@ -783,127 +751,127 @@ func (this *Sprite) applyEffects(surface *ebiten.Image) {
 				if e.timeEnd.Sub(now) > 0 {
 
 					where := float64(durationFromStart.Nanoseconds()) / float64(e.options.durationTime.Nanoseconds())
-					zoomFactor  := 1.0
+					zoomFactor := 1.0
 					//fmt.Printf("Effect:%d\n",e.options.Effect )
 
 					switch e.options.Effect {
-						case ZOOM :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.5
-								if where < step {
-									zoomFactor = convertRange(where, &Range{min:0,max:step}, &Range{min:e.zoomStart,max:e.options.Zoom})
-								} else {
-									zoomFactor = convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Zoom,max:e.zoomStart})
-								}
-
-							} else { // only one way
-								zoomFactor = convertRange(where, &Range{min:0,max:1}, &Range{min:e.zoomStart,max:e.options.Zoom})
-							}
-							this.ZoomX = zoomFactor
-							this.ZoomY = zoomFactor
-							///////////////////////////////////////////////
-
-						case FLIP :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.25
-								if 			where < step*1 {
-									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
-								} else if 	where < step*2 {
-								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
-								} else if 	where < step*3 {
-								 	zoomFactor = convertRange(where, &Range{min:step*2,max:step*3}, &Range{min:-1,max:0} )
-								} else {
-								 	zoomFactor = convertRange(where, &Range{min:step*3,max:step*4}, &Range{min:0,max:1} )
-								}
-
-							} else { // only one way
-								var step float64 = 0.5
-								if 			where < step*1 {
-									zoomFactor = convertRange(where, &Range{min:step*0,max:step*1},	&Range{min:1,max:0} )
-								} else {
-								 	zoomFactor = convertRange(where, &Range{min:step*1,max:step*2}, &Range{min:0,max:-1} )
-								}
-							}
-							if e.options.Axis == HORIZONTALY {
-								this.ZoomX = zoomFactor
+					case Zoom:
+						if e.options.GoBack { // go and return
+							step := 0.5
+							if where < step {
+								zoomFactor = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.zoomStart, max: e.options.Zoom})
 							} else {
-								this.ZoomY = zoomFactor
-							}
-							///////////////////////////////////////////////
-
-						case FADE :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.5
-								if 			where < step {
-									this.Alpha = convertRange(where, &Range{min:0,max:step}, &Range{min:e.options.FadeFrom,max:e.options.FadeTo})
-								} else {
-									this.Alpha = convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.FadeTo,max:e.options.FadeFrom})
-								}
-
-							} else { // only one way
-								this.Alpha = convertRange(where, &Range{min:0,max:1}, &Range{min:e.options.FadeFrom, max:e.options.FadeTo})
-							}
-							///////////////////////////////////////////////
-
-						case TURN :
-							clockwise := 1.0
-							if e.options.Clockwise {
-								clockwise = -1.0
+								zoomFactor = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.Zoom, max: e.zoomStart})
 							}
 
-							if e.options.GoBack { // go and return
-								var step float64 = 0.5
-								if 			where < step {
-									this.Angle = convertRange(where, &Range{min:0,max:step}, &Range{min:0,max:e.options.Angle * clockwise})
-								} else {
-									this.Angle = convertRange(where, &Range{min:step*1,max:step*2},	&Range{min:e.options.Angle * clockwise,max:0})
-								}
+						} else { // only one way
+							zoomFactor = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.zoomStart, max: e.options.Zoom})
+						}
+						sprite.ZoomX = zoomFactor
+						sprite.ZoomY = zoomFactor
+						///////////////////////////////////////////////
 
+					case Flip:
+						if e.options.GoBack { // go and return
+							step := 0.25
+							if where < step*1 {
+								zoomFactor = convertScale(where, &scale{min: step * 0, max: step * 1}, &scale{min: 1, max: 0})
+							} else if where < step*2 {
+								zoomFactor = convertScale(where, &scale{min: step * 1, max: step * 2}, &scale{min: 0, max: -1})
+							} else if where < step*3 {
+								zoomFactor = convertScale(where, &scale{min: step * 2, max: step * 3}, &scale{min: -1, max: 0})
 							} else {
-								this.Angle = convertRange(where, &Range{min:0,max:1}, &Range{min:0,max:e.options.Angle * clockwise})
+								zoomFactor = convertScale(where, &scale{min: step * 3, max: step * 4}, &scale{min: 0, max: 1})
 							}
-							///////////////////////////////////////////////
 
-							case HUE :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.5
-								if 			where < step {
-									this.Red 	= convertRange(where, &Range{min:0,max:step}, &Range{min:e.redStart,max:e.options.Red})
-									this.Green 	= convertRange(where, &Range{min:0,max:step}, &Range{min:e.greenStart,max:e.options.Green})
-									this.Blue 	= convertRange(where, &Range{min:0,max:step}, &Range{min:e.blueStart,max:e.options.Blue})
-								} else {
-									this.Red 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Red,max:e.redStart})
-									this.Green 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Green,max:e.greenStart})
-									this.Blue 	= convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Blue,max:e.blueStart})
-								}
-
-							} else { // only one way
-								this.Red 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.redStart, max:e.options.Red})
-								this.Green 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.greenStart, max:e.options.Green})
-								this.Blue 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.blueStart, max:e.options.Blue})
+						} else { // only one way
+							step := 0.5
+							if where < step*1 {
+								zoomFactor = convertScale(where, &scale{min: step * 0, max: step * 1}, &scale{min: 1, max: 0})
+							} else {
+								zoomFactor = convertScale(where, &scale{min: step * 1, max: step * 2}, &scale{min: 0, max: -1})
 							}
-							///////////////////////////////////////////////
+						}
+						if e.options.Axis == Horizontaly {
+							sprite.ZoomX = zoomFactor
+						} else {
+							sprite.ZoomY = zoomFactor
+						}
+						///////////////////////////////////////////////
 
-						case MOVE :
-							if e.options.GoBack { // go and return
-								var step float64 = 0.5
-								if 			where < step {
-									this.X=convertRange(where, &Range{min:0,max:step}, &Range{min:e.xStart,max:e.options.X})
-									this.Y=convertRange(where, &Range{min:0,max:step}, &Range{min:e.yStart,max:e.options.Y})
-								} else {
-									this.X=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.X,max:e.xStart})
-									this.Y=convertRange(where, &Range{min:step,max:1}, &Range{min:e.options.Y,max:e.yStart})
-								}
-
-							} else { // only one way
-								this.X 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.xStart, max:e.options.X})
-								this.Y 	= convertRange(where, &Range{min:0,max:1}, &Range{min:e.yStart, max:e.options.Y})
+					case Fade:
+						if e.options.GoBack { // go and return
+							step := 0.5
+							if where < step {
+								sprite.Alpha = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.options.FadeFrom, max: e.options.FadeTo})
+							} else {
+								sprite.Alpha = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.FadeTo, max: e.options.FadeFrom})
 							}
-							///////////////////////////////////////////////
+
+						} else { // only one way
+							sprite.Alpha = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.options.FadeFrom, max: e.options.FadeTo})
+						}
+						///////////////////////////////////////////////
+
+					case Turn:
+						clockwise := 1.0
+						if e.options.Clockwise {
+							clockwise = -1.0
+						}
+
+						if e.options.GoBack { // go and return
+							step := 0.5
+							if where < step {
+								sprite.Angle = convertScale(where, &scale{min: 0, max: step}, &scale{min: 0, max: e.options.Angle * clockwise})
+							} else {
+								sprite.Angle = convertScale(where, &scale{min: step * 1, max: step * 2}, &scale{min: e.options.Angle * clockwise, max: 0})
+							}
+
+						} else {
+							sprite.Angle = convertScale(where, &scale{min: 0, max: 1}, &scale{min: 0, max: e.options.Angle * clockwise})
+						}
+					///////////////////////////////////////////////
+
+					case Hue:
+						if e.options.GoBack { // go and return
+							step := 0.5
+							if where < step {
+								sprite.Red = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.redStart, max: e.options.Red})
+								sprite.Green = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.greenStart, max: e.options.Green})
+								sprite.Blue = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.blueStart, max: e.options.Blue})
+							} else {
+								sprite.Red = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.Red, max: e.redStart})
+								sprite.Green = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.Green, max: e.greenStart})
+								sprite.Blue = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.Blue, max: e.blueStart})
+							}
+
+						} else { // only one way
+							sprite.Red = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.redStart, max: e.options.Red})
+							sprite.Green = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.greenStart, max: e.options.Green})
+							sprite.Blue = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.blueStart, max: e.options.Blue})
+						}
+						///////////////////////////////////////////////
+
+					case Move:
+						if e.options.GoBack { // go and return
+							step := 0.5
+							if where < step {
+								sprite.X = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.xStart, max: e.options.X})
+								sprite.Y = convertScale(where, &scale{min: 0, max: step}, &scale{min: e.yStart, max: e.options.Y})
+							} else {
+								sprite.X = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.X, max: e.xStart})
+								sprite.Y = convertScale(where, &scale{min: step, max: 1}, &scale{min: e.options.Y, max: e.yStart})
+							}
+
+						} else { // only one way
+							sprite.X = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.xStart, max: e.options.X})
+							sprite.Y = convertScale(where, &scale{min: 0, max: 1}, &scale{min: e.yStart, max: e.options.Y})
+						}
+						///////////////////////////////////////////////
 
 					} // switch case
 
-				// animation finished
+					// animation finished
 				} else {
 					// repeat animation
 					if e.repeatCallback != nil {
@@ -920,21 +888,18 @@ func (this *Sprite) applyEffects(surface *ebiten.Image) {
 	} // foreach Effect
 }
 
-
-
 //////////////////////////////////////////// TOOLS ////////////////////////////////////////////////:
 
 func deg2rad(angle float64) float64 {
 	return angle * math.Pi / -180
 }
 
-
-type Range struct {
+type scale struct {
 	min, max float64
 }
 
-func convertRange(oldValue float64, oldRange, newRange *Range) float64 {
+func convertScale(oldValue float64, oldRange, newRange *scale) float64 {
 	oldDelta := (oldRange.max - oldRange.min)
-	newDelta := (newRange.max - newRange.min) 
+	newDelta := (newRange.max - newRange.min)
 	return (((oldValue - oldRange.min) * newDelta) / oldDelta) + newRange.min
 }
